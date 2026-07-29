@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Next.js build output and local caches
+.next/
+out/
+*.tsbuildinfo
+
+# Local environment settings (keep a committed .env.example if one is added)
+.env*
+!.env.example
+
+# Logs and operating-system files
+*.log
+.DS_Store
+
+# Local editor settings
+.vscode/
+.idea/
