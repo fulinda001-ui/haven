@@ -1,10 +1,73 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { moods, moodById, sceneById, scenesForMood, type Mood, type Scene } from "@/data/scenes";
 import { AmbientAudio, type AmbientAudioHandle } from "./AmbientAudio";
 
 const appPath = () => window.location.pathname;
+type KyotoStyle = CSSProperties & Record<`--${string}`, string>;
+
+const seededValue = (seed: number) => {
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return value - Math.floor(value);
+};
+
+const seededRange = (seed: number, minimum: number, maximum: number) => minimum + seededValue(seed) * (maximum - minimum);
+
+type SteamWisp = { id: number; left: number; bottom: number; width: number; height: number; duration: number; opacity: number; drift: number; curl: number; phase: number };
+type RainDrop = { id: number; left: number; top: number; width: number; length: number; duration: number; delay: number; opacity: number; drift: number; merge: boolean };
+
+function makeSteamWisp(id: number, phase = 0): SteamWisp {
+  const duration = seededRange(id, 6.8, 10.8);
+  return { id, left: seededRange(id + 1, 25.2, 30), bottom: seededRange(id + 2, 15, 16.1), width: seededRange(id + 3, 10, 17), height: seededRange(id + 4, 96, 132), duration, opacity: seededRange(id + 5, .16, .24), drift: seededRange(id + 6, -13, 13), curl: seededRange(id + 7, -7, 7), phase: Math.min(phase, duration * .76) };
+}
+
+function makeRainDrop(id: number): RainDrop {
+  return { id, left: seededRange(id, 4, 95), top: seededRange(id + 1, -10, 32), width: seededRange(id + 2, 1.2, 2.4), length: seededRange(id + 3, 20, 96), duration: seededRange(id + 4, 10, 22), delay: seededRange(id + 5, .35, 3.1), opacity: seededRange(id + 6, .12, .28), drift: seededRange(id + 7, -3.5, 3.5), merge: seededValue(id + 8) > .67 };
+}
+
+function SteamWispLayer({ wisp, onBirth, onFinish }: { wisp: SteamWisp; onBirth: (id: number) => void; onFinish: (id: number) => void }) {
+  useEffect(() => {
+    const remaining = Math.max(700, (wisp.duration - wisp.phase) * 1000);
+    const birth = window.setTimeout(() => onBirth(wisp.id), remaining * .72);
+    const finish = window.setTimeout(() => onFinish(wisp.id), remaining + 80);
+    return () => { window.clearTimeout(birth); window.clearTimeout(finish); };
+  }, [onBirth, onFinish, wisp.duration, wisp.id, wisp.phase]);
+
+  const style: KyotoStyle = { "--steam-left": `${wisp.left}%`, "--steam-bottom": `${wisp.bottom}%`, "--steam-width": `${wisp.width}px`, "--steam-height": `${wisp.height}px`, "--steam-duration": `${wisp.duration}s`, "--steam-opacity": `${wisp.opacity}`, "--steam-drift": `${wisp.drift}px`, "--steam-curl": `${wisp.curl}deg`, animationDelay: `-${wisp.phase}s` };
+  return <span className="kyoto-coffee-steam" style={style} />;
+}
+
+function KyotoLivingLayer() {
+  const nextSteamId = useRef(20);
+  const nextRainId = useRef(90);
+  const [steamWisps, setSteamWisps] = useState(() => [makeSteamWisp(1, 1.8), makeSteamWisp(2, 3.9), makeSteamWisp(3, 5.1), makeSteamWisp(4, 2.7)]);
+  const [movingDrops, setMovingDrops] = useState(() => [makeRainDrop(61), makeRainDrop(72)]);
+
+  const birthSteam = useCallback((id: number) => setSteamWisps((current) => current.some((wisp) => wisp.id === id) && current.length < 5 ? [...current, makeSteamWisp(nextSteamId.current++)] : current), []);
+  const finishSteam = useCallback((id: number) => setSteamWisps((current) => {
+    const remaining = current.filter((wisp) => wisp.id !== id);
+    return remaining.length < 4 ? [...remaining, makeSteamWisp(nextSteamId.current++)] : remaining;
+  }), []);
+  const renewRain = (id: number) => setMovingDrops((current) => current.map((drop) => drop.id === id ? makeRainDrop(nextRainId.current++) : drop));
+  const staticDroplets = Array.from({ length: 48 }, (_, index) => {
+    const seed = index + 1;
+    const style: KyotoStyle = { "--static-left": `${seededRange(seed, 2, 98)}%`, "--static-top": `${seededRange(seed + 1, 2, 96)}%`, "--static-size": `${seededRange(seed + 2, .8, 2.1)}px`, "--static-opacity": `${seededRange(seed + 3, .09, .26)}` };
+    return <span key={seed} className="kyoto-static-droplet" style={style} />;
+  });
+
+  return <div className="kyoto-living-layer" aria-hidden="true">
+    <span className="kyoto-lamp-glow" />
+    <div className="kyoto-steam-system">{steamWisps.map((wisp) => <SteamWispLayer key={wisp.id} wisp={wisp} onBirth={birthSteam} onFinish={finishSteam} />)}</div>
+    <div className="kyoto-window-rain-pane">
+      <div className="kyoto-static-rain">{staticDroplets}</div>
+      {movingDrops.map((drop) => {
+        const style: KyotoStyle = { "--rain-left": `${drop.left}%`, "--rain-top": `${drop.top}%`, "--rain-width": `${drop.width}px`, "--rain-length": `${drop.length}px`, "--rain-duration": `${drop.duration}s`, "--rain-delay": `${drop.delay}s`, "--rain-opacity": `${drop.opacity}`, "--rain-drift": `${drop.drift}px` };
+        return <span key={drop.id} className={`kyoto-window-rain ${drop.merge ? "kyoto-window-rain--merge" : ""}`} style={style} onAnimationEnd={() => renewRain(drop.id)} />;
+      })}
+    </div>
+  </div>;
+}
 
 function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
   return (
@@ -22,22 +85,30 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
 }
 
 function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }) {
+  const chooseWithKeyboard = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onChoose();
+    }
+  };
+
   return (
-    <article className="scene-poster">
+    <article className="scene-poster" role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} aria-label={`Enter ${scene.name}`}>
       <img src={scene.coverImage} alt={`${scene.name}, ${scene.location}`} />
       <div className="scene-poster-copy">
         <p>{scene.location}</p>
         <h2>{scene.name}</h2>
         <span>{scene.description}</span>
-        <button onClick={onChoose}>
+        <span className="scene-poster-link" aria-hidden="true">
           {scene.status === "available" ? "Enter scene" : "View scene"} <i>→</i>
-        </button>
+        </span>
       </div>
     </article>
   );
 }
 
 function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; mode: "intro" | "active"; onBack: () => void; onEnter: () => void; onLeave: () => void }) {
+  const isKyotoRainyCafe = scene.id === "kyoto-rainy-cafe";
   const [entering, setEntering] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -123,14 +194,15 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   };
 
   return (
-    <main ref={stageRef} className={`scene-stage ${mode === "active" ? "is-active" : "is-intro"} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
+    <main ref={stageRef} className={`scene-stage ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
       <AmbientAudio ref={ambientAudioRef} sceneId={scene.id} />
       <div className="scene-viewport" aria-hidden="true"><div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}><div className="camera-enter-leave"><div className="camera-scale"><div className="camera-drift-x"><div className="camera-drift-y"><div className="living-scene-image" style={{ backgroundImage: `url(${scene.backgroundImage})` }} /></div></div></div></div></div></div>
       <div className="ambient-light ambient-light-warm" aria-hidden="true" /><div className="ambient-light ambient-light-cool" aria-hidden="true" /><div className="scene-grain" aria-hidden="true" />
-      <section className="scene-introduction-copy"><p>{scene.location}</p><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter}>Enter Hokkaido <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
+      {isKyotoRainyCafe && mode === "active" && <KyotoLivingLayer />}
+      <section className="scene-introduction-copy"><p>{scene.location}</p><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter}>Enter {scene.city} <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
       <button className="quiet-back" onClick={onBack}>← Back</button><p className="introduction-note">Nothing is required when you arrive.</p>
       <section className="scene-presence"><p>{scene.location}</p><span>{scene.description}</span><small>{scene.time} · {scene.weather}</small></section>
-      <div className={`scene-controls ${controlsVisible ? "visible" : ""}`}><button aria-label={soundOn ? "Turn ambient sound off" : "Turn ambient sound on"} aria-pressed={soundOn} onClick={toggleSound}>{soundOn ? "Sound on" : "Sound off"}</button><button aria-label="Toggle fullscreen" onClick={toggleFullscreen}>Fullscreen</button><button aria-label="Leave Hokkaido Cabin" onClick={leave}>Leave</button></div>
+      <div className={`scene-controls ${controlsVisible ? "visible" : ""}`}><button aria-label={soundOn ? "Turn ambient sound off" : "Turn ambient sound on"} aria-pressed={soundOn} onClick={toggleSound}>{soundOn ? "Sound on" : "Sound off"}</button><button aria-label="Toggle fullscreen" onClick={toggleFullscreen}>Fullscreen</button><button aria-label={`Leave ${scene.name}`} onClick={leave}>Leave</button></div>
       <p className="scene-exists">You can simply exist here.</p><div className="scene-transition-veil" aria-hidden="true"><span>Entering</span></div>
     </main>
   );
