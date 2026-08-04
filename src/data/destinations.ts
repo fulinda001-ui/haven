@@ -1,3 +1,8 @@
+import {
+  DISCOVERED_DESTINATIONS_KEY,
+  HAVEN_PROGRESS_CHANGED_EVENT,
+} from "./havenStorage";
+
 export type Place = {
   id: string;
   name: string;
@@ -8,13 +13,14 @@ export type Place = {
   sceneIds: string[];
   note: string;
   currentMoment: string;
-  initialDiscoveryDate?: string;
   isDefaultSelection?: boolean;
 };
 
 export type PlaceDiscoveries = Record<string, string>;
 
-export const DISCOVERED_DESTINATIONS_KEY = "haven.discoveredPlaces";
+export { DISCOVERED_DESTINATIONS_KEY } from "./havenStorage";
+export const PLACE_DISCOVERIES_CHANGED_EVENT = HAVEN_PROGRESS_CHANGED_EVENT;
+export const BALI_SUNRISE_DESTINATION_ID = "bali-sunrise-house";
 
 // This is the single source of truth for every Haven Place. Future scenes only
 // need to add their scene ID to the appropriate Place's sceneIds list.
@@ -28,7 +34,6 @@ export const places: Place[] = [
     sceneIds: ["hokkaido-forest-cabin"],
     note: "Snow falls quietly through the pines. The cabin stays warm while the forest slowly disappears into white.",
     currentMoment: "Snow Cabin",
-    initialDiscoveryDate: "2026-07-01T00:00:00.000Z",
   },
   {
     id: "kyoto",
@@ -39,7 +44,6 @@ export const places: Place[] = [
     sceneIds: ["kyoto-rainy-cafe"],
     note: "Rain softens the sounds of the city. Time seems to slow with every cup of coffee.",
     currentMoment: "Rainy Café",
-    initialDiscoveryDate: "2026-07-01T00:00:00.000Z",
     isDefaultSelection: true,
   },
   {
@@ -119,25 +123,19 @@ export const places: Place[] = [
     currentMoment: "Rooftop Sunset",
   },
   {
-    id: "bali",
+    id: BALI_SUNRISE_DESTINATION_ID,
     name: "Bali Sunrise House",
     mapLabel: "Bali",
     country: "Ubud, Bali",
     xPercent: 74.8,
     yPercent: 55.5,
-    sceneIds: ["bali-sunrise-house"],
+    sceneIds: [BALI_SUNRISE_DESTINATION_ID],
     note: "The day begins before the heat, before anyone needs you.",
     currentMoment: "Sunrise House",
   },
   { id: "patagonia", name: "Patagonia", country: "Argentina", xPercent: 28.3, yPercent: 77.9, sceneIds: [], note: "", currentMoment: "" },
   { id: "new-zealand", name: "New Zealand", country: "New Zealand", xPercent: 88.7, yPercent: 83.4, sceneIds: [], note: "", currentMoment: "" },
 ];
-
-const initialDiscoveries = (): PlaceDiscoveries => Object.fromEntries(
-  places
-    .filter((place) => place.initialDiscoveryDate)
-    .map((place) => [place.id, place.initialDiscoveryDate!]),
-);
 
 const readStoredDiscoveries = (): PlaceDiscoveries => {
   if (typeof window === "undefined") return {};
@@ -150,7 +148,7 @@ const readStoredDiscoveries = (): PlaceDiscoveries => {
 };
 
 export function readPlaceDiscoveries(): PlaceDiscoveries {
-  return { ...initialDiscoveries(), ...readStoredDiscoveries() };
+  return readStoredDiscoveries();
 }
 
 export function getPlaceForScene(sceneId: string) {
@@ -168,6 +166,10 @@ export function markScenePlaceDiscovered(sceneId: string) {
   try {
     const stored = readStoredDiscoveries();
     window.localStorage.setItem(DISCOVERED_DESTINATIONS_KEY, JSON.stringify({ ...stored, [place.id]: discoveredAt }));
+    // The browser's native `storage` event does not fire in the same tab that
+    // wrote localStorage. This keeps an already-open Your World in sync as
+    // soon as a place is discovered, without introducing a Bali-only store.
+    window.dispatchEvent(new Event(PLACE_DISCOVERIES_CHANGED_EVENT));
     return { place, newlyDiscovered: true };
   } catch {
     return { place, newlyDiscovered: false };

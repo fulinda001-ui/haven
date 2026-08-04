@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const DISCOVERY_STORAGE_KEY = "haven.discoveredPlaces";
+import { clearHavenProgress } from "@/data/havenStorage";
 
 export function DeveloperTools() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,8 +10,9 @@ export function DeveloperTools() {
   if (process.env.NODE_ENV !== "development") return null;
 
   const resetDiscoveries = () => {
-    window.localStorage.removeItem(DISCOVERY_STORAGE_KEY);
-    window.location.reload();
+    clearHavenProgress();
+    setIsConfirmingReset(false);
+    setIsOpen(false);
   };
 
   return (

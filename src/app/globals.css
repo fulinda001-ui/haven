@@ -62,7 +62,7 @@ img { display: block; max-width: 100%; }
 .world-marker--provence .world-marker-name { transform:translate(-18px,13px); }
 .world-marker--tuscany .world-marker-name { transform:translate(5px,15px); }
 .world-marker--seoul .world-marker-name { transform:translate(-8px,12px); }
-.world-marker--bali .world-marker-name { transform:translate(5px,13px); }
+.world-marker--bali-sunrise-house .world-marker-name { transform:translate(5px,13px); }
 .world-marker--discovered.is-selected { transform:translate(-50%,-50%) scale(1.1); }
 .world-marker--discovered.is-selected::after { opacity:1; }
 .world-marker--discovered.is-selected .world-marker-dot { width:11px; height:11px; background:#9c6f3f; box-shadow:0 0 0 4px #a77e4b30, 0 0 15px #a77e4b5f; }

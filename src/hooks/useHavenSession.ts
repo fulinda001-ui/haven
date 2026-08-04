@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ACTIVE_SESSION_STORAGE_KEY, HAVEN_PROGRESS_CHANGED_EVENT } from "@/data/havenStorage";
 
-export const ACTIVE_SESSION_STORAGE_KEY = "haven.activeSession";
+export { ACTIVE_SESSION_STORAGE_KEY } from "@/data/havenStorage";
 
 export type ActiveSession = {
   durationMinutes: number;
@@ -74,6 +75,21 @@ export function useHavenSession(placeId: string, isPlaceActive: boolean, audio: 
 
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { audioRef.current = audio; }, [audio]);
+
+  useEffect(() => {
+    const reloadStoredSession = () => {
+      const stored = readStoredSession();
+      sessionRef.current = stored;
+      setSession(stored);
+      setRemainingMs(stored ? currentRemaining(stored) : 0);
+      if (!stored) {
+        setCompleted(false);
+        setAnnouncement("");
+      }
+    };
+    window.addEventListener(HAVEN_PROGRESS_CHANGED_EVENT, reloadStoredSession);
+    return () => window.removeEventListener(HAVEN_PROGRESS_CHANGED_EVENT, reloadStoredSession);
+  }, []);
 
   const write = useCallback((next: ActiveSession | null) => {
     sessionRef.current = next;

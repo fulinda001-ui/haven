@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { moods, moodById, sceneById, scenesForMood, type Mood, type Scene } from "@/data/scenes";
-import { markScenePlaceDiscovered } from "@/data/destinations";
+import { BALI_SUNRISE_DESTINATION_ID, markScenePlaceDiscovered } from "@/data/destinations";
+import { migrateHavenStorage } from "@/data/havenStorage";
 import { formatSessionTime, useHavenSession, type ActiveSession } from "@/hooks/useHavenSession";
 import { AmbientAudio, type AmbientAudioHandle } from "./AmbientAudio";
 import { DeveloperTools } from "./DeveloperTools";
@@ -14,7 +15,6 @@ const HOKKAIDO_SCENE_ID = "hokkaido-forest-cabin";
 const ICELAND_SCENE_ID = "iceland-aurora-lodge";
 const FINLAND_SCENE_ID = "finland-glass-cabin";
 const NORWEGIAN_FJORD_SCENE_ID = "norwegian-fjord-house";
-const BALI_SUNRISE_SCENE_ID = "bali-sunrise-house";
 type ImagePreparation = "ready" | "failed";
 const hokkaidoImagePreparations = new Map<string, Promise<ImagePreparation>>();
 
@@ -254,7 +254,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const isSeoulRooftopSunset = scene.id === "seoul-rooftop-sunset";
   const isKyotoRainyCafe = scene.id === "kyoto-rainy-cafe";
   const isSwissLakes = scene.id === "swiss-lakeside-morning";
-  const isBaliSunriseHouse = scene.id === BALI_SUNRISE_SCENE_ID;
+  const isBaliSunriseHouse = scene.id === BALI_SUNRISE_DESTINATION_ID;
   const hasAmbientSoundscape = isHokkaidoCabin || isIcelandAuroraLodge || isFinlandGlassCabin || isNorwegianFjordHouse || isTuscanySummerVilla || isProvenceKitchen || isSeoulRooftopSunset || isKyotoRainyCafe || isSwissLakes || isBaliSunriseHouse;
   const [entering, setEntering] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -269,11 +269,14 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const sessionTimer = useHavenSession(scene.id, mode === "active", {
     onPauseAudio: () => { ambientAudioRef.current?.pauseSoundscape(); setSoundOn(false); },
     onResumeAudio: () => { ambientAudioRef.current?.resumeSoundscape(); setSoundOn(true); },
-    onCompleteAudio: () => { ambientAudioRef.current?.stopSoundscape(10_000); setSoundOn(false); },
+    onCompleteAudio: () => {
+      ambientAudioRef.current?.stopSoundscape(10_000);
+      setSoundOn(false);
+      if (scene.discoveryTiming === "completion") markScenePlaceDiscovered(scene.id);
+    },
     onEndAudio: () => { ambientAudioRef.current?.stopSoundscape(); setSoundOn(false); },
   });
   const { session: activeSession, remainingMs, completed, announcement, start, pause, resume, addTenMinutes, end, continueWithoutTimer, clearCompletion } = sessionTimer;
-  const completionDiscoveryRef = useRef(false);
 
   useEffect(() => { if (mode === "intro") setLeaving(false); }, [mode]);
 
@@ -293,16 +296,6 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   }, [activeSession?.paused]);
 
   useEffect(() => {
-    if (!completed || scene.discoveryTiming !== "completion" || completionDiscoveryRef.current) return;
-    markScenePlaceDiscovered(scene.id);
-    completionDiscoveryRef.current = true;
-  }, [completed, scene.discoveryTiming, scene.id]);
-
-  useEffect(() => {
-    if (!completed) completionDiscoveryRef.current = false;
-  }, [completed]);
-
-  useEffect(() => {
     if (typeof navigator === "undefined") return;
     const browserNavigator = navigator as Navigator & { audioSession?: { type: string } };
     if (browserNavigator.audioSession) {
@@ -315,7 +308,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       mediaSession.playbackState = "none";
       return;
     }
-    const moment = scene.id === "hokkaido-forest-cabin" ? "Forest Cabin" : scene.id === "kyoto-rainy-cafe" ? "Rainy Café" : scene.id === ICELAND_SCENE_ID ? "Black Beach Cabin" : scene.id === FINLAND_SCENE_ID ? "Glass Cabin" : scene.id === NORWEGIAN_FJORD_SCENE_ID ? "Fjord House" : scene.id === BALI_SUNRISE_SCENE_ID ? "Sunrise House" : "Lakeside Morning";
+    const moment = scene.id === "hokkaido-forest-cabin" ? "Forest Cabin" : scene.id === "kyoto-rainy-cafe" ? "Rainy Café" : scene.id === ICELAND_SCENE_ID ? "Black Beach Cabin" : scene.id === FINLAND_SCENE_ID ? "Glass Cabin" : scene.id === NORWEGIAN_FJORD_SCENE_ID ? "Fjord House" : scene.id === BALI_SUNRISE_DESTINATION_ID ? "Sunrise House" : "Lakeside Morning";
     try {
       mediaSession.metadata = new MediaMetadata({ title: `${scene.city} — ${moment}`, artist: "Haven", album: "Ambient Session", artwork: [{ src: scene.coverImage }] });
     } catch { /* Metadata is progressive enhancement. */ }
@@ -356,6 +349,9 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
 
     // The first playback request remains inside this actual user click, before
     // any navigation, visual transition, timer, or state change occurs.
+    // Bali's bell is primed here specifically so its delayed audible strike is
+    // still authorized by this exact Enter interaction in production browsers.
+    if (isBaliSunriseHouse) ambientAudioRef.current?.primeBaliTempleBell();
     const audio = activeSession?.paused ? null : ambientAudioRef.current?.getAmbientAudio();
     if (audio) {
       audio.muted = false;
@@ -448,6 +444,12 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
 
 export function EmotionalEscapeApp() {
   const [path, setPath] = useState("/");
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    migrateHavenStorage();
+    setStorageReady(true);
+  }, []);
 
   useEffect(() => {
     const syncPath = () => setPath(appPath());
@@ -482,9 +484,11 @@ export function EmotionalEscapeApp() {
   const experienceScene = sceneById(experienceSceneId);
   const isYourWorld = path === "/your-world";
 
+  if (!storageReady) return null;
+
   if (introScene || experienceScene) {
     const scene = experienceScene ?? introScene!;
-    return <><SceneStage scene={scene} mode={experienceScene ? "active" : "intro"} onBack={() => go(`/feelings/${scene.mood}`)} onEnter={() => { if (scene.discoveryTiming !== "completion") markScenePlaceDiscovered(scene.id); go(`/scene/${scene.id}/experience`); }} onLeave={() => go(`/scene/${scene.id}`)} /><DeveloperTools /></>;
+    return <><SceneStage scene={scene} mode={experienceScene ? "active" : "intro"} onBack={() => go(`/feelings/${scene.mood}`)} onEnter={() => { if (scene.discoveryTiming !== "completion") markScenePlaceDiscovered(scene.id); go(`/scene/${scene.id}/experience`); }} onLeave={() => { if (scene.discoveryTiming === "completion") markScenePlaceDiscovered(scene.id); go(`/scene/${scene.id}`); }} /><DeveloperTools /></>;
   }
 
   if (isYourWorld) return <><YourWorldPage onExplore={() => go("/")} /><DeveloperTools /></>;

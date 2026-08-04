@@ -8,6 +8,7 @@ type Players = { base: HTMLAudioElement; birds: HTMLAudioElement; breeze: HTMLAu
 
 export type AmbientAudioHandle = {
   getAmbientAudio: () => HTMLAudioElement | null;
+  primeBaliTempleBell: () => void;
   startSoundscape: () => void;
   pauseSoundscape: () => void;
   resumeSoundscape: () => void;
@@ -76,8 +77,9 @@ const NORWEGIAN_FJORD_WATER_BASE_VOLUME = 0.16;
 const BALI_MORNING_AUDIO = "/scenes/bali-sunrise-house/audio/morning-garden.mp3";
 const BALI_MORNING_BASE_VOLUME = 0.16;
 const BALI_TEMPLE_BELL_AUDIO = "/scenes/bali-sunrise-house/audio/temple-bell-single.m4a";
-const BALI_TEMPLE_BELL_VOLUME = 0.038;
-const BALI_TEMPLE_BELL_REPEAT = { minimum: 25_000, maximum: 45_000 } as const;
+// Kept intentionally prominent only while verifying production playback.
+const BALI_TEMPLE_BELL_VOLUME = 0.25;
+const BALI_TEMPLE_BELL_FIRST_DELAY_MS = 2500;
 
 const randomBetween = (minimum: number, maximum: number) => minimum + Math.random() * (maximum - minimum);
 
@@ -2031,14 +2033,21 @@ type OccasionalAudioEvent = {
   source: string;
   volume: number;
   firstDelayMs: number;
-  repeat: { minimum: number; maximum: number };
+  resonanceMs?: number;
+  exitFadeMs?: number;
 };
 
 class SingleAmbientSoundscape {
   private player: HTMLAudioElement | null = null;
   private eventPlayer: HTMLAudioElement | null = null;
+  private eventContext: AudioContext | null = null;
+  private eventSource: MediaElementAudioSourceNode | null = null;
+  private eventMasterGain: GainNode | null = null;
   private fadeFrame: number | null = null;
   private eventTimer: number | null = null;
+  private eventReleaseTimer: number | null = null;
+  private eventArmed = false;
+  private eventPlayed = false;
   private running = false;
 
   constructor(
@@ -2073,13 +2082,56 @@ class SingleAmbientSoundscape {
       audio.preload = "auto";
       audio.loop = false;
       audio.muted = false;
-      audio.volume = this.occasionalEvent.volume;
+      audio.volume = 1;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      audio.onended = () => { if (this.running) this.scheduleEvent(); };
+      audio.onerror = () => console.error("Bali temple bell audio failed to load:", audio.error);
       document.body.append(audio);
       audio.load();
       this.eventPlayer = audio;
+
+      const context = new AudioContext();
+      const source = context.createMediaElementSource(audio);
+      const dryGain = context.createGain();
+      const convolver = context.createConvolver();
+      const reverbFilter = context.createBiquadFilter();
+      const wetGain = context.createGain();
+      const masterGain = context.createGain();
+
+      dryGain.gain.value = 1;
+      wetGain.gain.value = 0.075;
+      masterGain.gain.value = 0.0001;
+      reverbFilter.type = "lowpass";
+      reverbFilter.frequency.value = 3400;
+      reverbFilter.Q.value = 0.45;
+
+      // A short, diffuse open-air impulse extends the existing recorded tail
+      // without introducing a perceptible repeat or a cinematic echo.
+      const impulseSeconds = 5.4;
+      const impulse = context.createBuffer(2, Math.ceil(context.sampleRate * impulseSeconds), context.sampleRate);
+      for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+        const samples = impulse.getChannelData(channel);
+        let softenedNoise = 0;
+        for (let index = 0; index < samples.length; index += 1) {
+          const progress = index / samples.length;
+          softenedNoise = softenedNoise * 0.72 + (Math.random() * 2 - 1) * 0.28;
+          const envelope = Math.pow(1 - progress, 2.8) * Math.exp(-progress * 1.35);
+          samples[index] = softenedNoise * envelope;
+        }
+      }
+      convolver.buffer = impulse;
+
+      source.connect(dryGain);
+      dryGain.connect(masterGain);
+      source.connect(convolver);
+      convolver.connect(reverbFilter);
+      reverbFilter.connect(wetGain);
+      wetGain.connect(masterGain);
+      masterGain.connect(context.destination);
+
+      this.eventContext = context;
+      this.eventSource = source;
+      this.eventMasterGain = masterGain;
     }
     return this.eventPlayer;
   }
@@ -2089,36 +2141,108 @@ class SingleAmbientSoundscape {
     this.eventTimer = null;
   }
 
-  private scheduleEvent(delay?: number) {
-    if (!this.running || !this.occasionalEvent) return;
-    this.clearEventTimer();
-    const wait = delay ?? randomBetween(this.occasionalEvent.repeat.minimum, this.occasionalEvent.repeat.maximum);
-    this.eventTimer = window.setTimeout(() => {
-      this.eventTimer = null;
-      this.playEvent();
-    }, wait);
+  private clearEventReleaseTimer() {
+    if (this.eventReleaseTimer !== null) window.clearTimeout(this.eventReleaseTimer);
+    this.eventReleaseTimer = null;
   }
 
-  private playEvent() {
-    if (!this.running || !this.occasionalEvent) return;
+  private applyEventDecay() {
+    if (!this.occasionalEvent || !this.eventContext || !this.eventMasterGain) return;
+    const durationSeconds = (this.occasionalEvent.resonanceMs ?? 13_500) / 1000;
+    const curve = new Float32Array(160);
+    for (let index = 0; index < curve.length; index += 1) {
+      const progress = index / (curve.length - 1);
+      const naturalTail = Math.pow(1 - progress, 1.4) * 0.75 + Math.exp(-progress * 3) * 0.25;
+      curve[index] = Math.max(0.0001, this.occasionalEvent.volume * naturalTail);
+    }
+    const gain = this.eventMasterGain.gain;
+    const now = this.eventContext.currentTime;
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(this.occasionalEvent.volume, now);
+    gain.setValueCurveAtTime(curve, now, durationSeconds);
+  }
+
+  /**
+   * Must be invoked directly from the Enter button's click handler.  Browsers
+   * associate this initial silent playback with that user gesture; the same
+   * already-playing element is then rewound for the audible strike shortly
+   * after arrival, avoiding a blocked delayed autoplay request.
+   */
+  primeEventFromUserGesture() {
+    if (!this.occasionalEvent || this.eventArmed) return;
     const audio = this.ensureEvent();
     if (!audio) return;
-    // The event has no overlap: if it is still decaying, wait for a fresh
-    // irregular interval instead of attempting another strike.
-    if (!audio.paused) {
-      this.scheduleEvent();
-      return;
-    }
+    // A later visit to Bali is a new user-initiated scene entry.
+    this.eventPlayed = false;
+    this.eventArmed = true;
+    audio.pause();
     audio.currentTime = 0;
-    audio.volume = this.occasionalEvent.volume;
-    void audio.play().catch(() => { if (this.running) this.scheduleEvent(); });
+    audio.muted = false;
+    audio.loop = false;
+    audio.volume = 1;
+    if (this.eventMasterGain && this.eventContext) {
+      const now = this.eventContext.currentTime;
+      this.eventMasterGain.gain.cancelScheduledValues(now);
+      this.eventMasterGain.gain.setValueAtTime(0.0001, now);
+      void this.eventContext.resume().catch((error: unknown) => {
+        console.error("Bali temple bell audio context failed to resume:", error);
+      });
+    }
+
+    const playback = audio.play();
+    playback.then(() => {
+      console.info("Bali temple bell playback primed", { src: audio.currentSrc || audio.src });
+    }).catch((error: unknown) => {
+      this.eventArmed = false;
+      this.clearEventTimer();
+      console.error("Bali temple bell playback failed:", error);
+    });
+
+    this.clearEventTimer();
+    this.eventTimer = window.setTimeout(() => {
+      this.eventTimer = null;
+      if (!this.eventArmed || this.eventPlayed) return;
+      audio.currentTime = 0;
+      this.applyEventDecay();
+      this.eventPlayed = true;
+      console.info("Bali temple bell audible strike started", { src: audio.currentSrc || audio.src, volume: this.occasionalEvent?.volume ?? 0 });
+    }, this.occasionalEvent.firstDelayMs);
   }
 
-  private stopEvent() {
+  private releaseEventResources() {
+    this.clearEventReleaseTimer();
+    if (this.eventPlayer) {
+      this.eventPlayer.pause();
+      this.eventPlayer.currentTime = 0;
+      this.eventPlayer.onerror = null;
+      this.eventPlayer.remove();
+      this.eventPlayer = null;
+    }
+    this.eventSource?.disconnect();
+    this.eventSource = null;
+    this.eventMasterGain?.disconnect();
+    this.eventMasterGain = null;
+    if (this.eventContext) void this.eventContext.close().catch(() => {});
+    this.eventContext = null;
+    this.eventArmed = false;
+  }
+
+  private stopEvent(release = false, fadeMs = 0) {
     this.clearEventTimer();
     if (!this.eventPlayer) return;
+    this.clearEventReleaseTimer();
+    if (fadeMs > 0 && this.eventContext && this.eventMasterGain) {
+      const gain = this.eventMasterGain.gain;
+      const now = this.eventContext.currentTime;
+      gain.cancelAndHoldAtTime(now);
+      gain.exponentialRampToValueAtTime(0.0001, now + fadeMs / 1000);
+      this.eventReleaseTimer = window.setTimeout(() => this.releaseEventResources(), fadeMs + 80);
+      return;
+    }
     this.eventPlayer.pause();
     this.eventPlayer.currentTime = 0;
+    this.eventArmed = false;
+    if (release) this.releaseEventResources();
   }
 
   private fade(audio: HTMLAudioElement, target: number, duration: number, done?: () => void) {
@@ -2141,7 +2265,6 @@ class SingleAmbientSoundscape {
     this.running = true;
     audio.loop = true;
     this.fade(audio, this.volume, this.fadeInMs);
-    if (this.occasionalEvent) this.scheduleEvent(this.occasionalEvent.firstDelayMs);
   }
 
   pauseSoundscape() {
@@ -2156,13 +2279,14 @@ class SingleAmbientSoundscape {
     const audio = this.ensure();
     this.running = true;
     void audio.play().then(() => this.fade(audio, this.volume, 850)).catch(() => {});
-    if (this.occasionalEvent) this.scheduleEvent(this.occasionalEvent.firstDelayMs);
   }
 
   stopSoundscape(fadeMs = 2000) {
     if (!this.player) return;
     this.running = false;
-    this.stopEvent();
+    // Scene exit releases the one-shot bell and its timer; the bird bed keeps
+    // using its existing player and fade behavior unchanged.
+    this.stopEvent(true, this.occasionalEvent?.exitFadeMs ?? 1800);
     this.fade(this.player, 0, fadeMs, () => {
       this.player?.pause();
       if (this.player) this.player.currentTime = 0;
@@ -2171,7 +2295,7 @@ class SingleAmbientSoundscape {
 
   destroy() {
     this.running = false;
-    this.stopEvent();
+    this.stopEvent(true);
     if (this.fadeFrame !== null) cancelAnimationFrame(this.fadeFrame);
     this.fadeFrame = null;
     if (this.player) {
@@ -2180,8 +2304,7 @@ class SingleAmbientSoundscape {
       this.player.remove();
       this.player = null;
     }
-    this.eventPlayer?.remove();
-    this.eventPlayer = null;
+    this.releaseEventResources();
   }
 }
 
@@ -2208,8 +2331,9 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   if (!baliMorningSoundscapeRef.current) baliMorningSoundscapeRef.current = new SingleAmbientSoundscape(BALI_MORNING_AUDIO, BALI_MORNING_BASE_VOLUME, 2000, {
     source: BALI_TEMPLE_BELL_AUDIO,
     volume: BALI_TEMPLE_BELL_VOLUME,
-    firstDelayMs: 3500,
-    repeat: BALI_TEMPLE_BELL_REPEAT,
+    firstDelayMs: BALI_TEMPLE_BELL_FIRST_DELAY_MS,
+    resonanceMs: 13_500,
+    exitFadeMs: 1800,
   });
   const hokkaidoSoundscape = hokkaidoSoundscapeRef.current;
   const kyotoSoundscape = kyotoSoundscapeRef.current;
@@ -2237,6 +2361,9 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "swiss-lakeside-morning") return swissLakesSoundscape.getAmbientAudio();
       if (sceneId === "bali-sunrise-house") return baliMorningSoundscape.getAmbientAudio();
       return null;
+    },
+    primeBaliTempleBell: () => {
+      if (sceneId === "bali-sunrise-house") baliMorningSoundscape.primeEventFromUserGesture();
     },
     startSoundscape: () => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.startSoundscape();

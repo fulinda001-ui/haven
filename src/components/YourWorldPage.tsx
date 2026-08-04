@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { places, readPlaceDiscoveries, type Place, type PlaceDiscoveries } from "@/data/destinations";
+import { PLACE_DISCOVERIES_CHANGED_EVENT, places, readPlaceDiscoveries, type Place, type PlaceDiscoveries } from "@/data/destinations";
 
 function DestinationMarker({ place, discovered, selected, onSelect }: { place: Place; discovered: boolean; selected: boolean; onSelect: () => void }) {
   const style = { left: `${place.xPercent}%`, top: `${place.yPercent}%` };
@@ -57,16 +57,16 @@ export function YourWorldPage({ onExplore }: { onExplore: () => void }) {
     syncDiscoveries();
     window.addEventListener("focus", syncDiscoveries);
     window.addEventListener("storage", syncDiscoveries);
+    window.addEventListener(PLACE_DISCOVERIES_CHANGED_EVENT, syncDiscoveries);
     return () => {
       window.removeEventListener("focus", syncDiscoveries);
       window.removeEventListener("storage", syncDiscoveries);
+      window.removeEventListener(PLACE_DISCOVERIES_CHANGED_EVENT, syncDiscoveries);
     };
   }, []);
 
   const discoveredPlaces = places.filter((place) => discoveries[place.id]);
   const selected = discoveredPlaces.find((place) => place.id === selectedId) ?? discoveredPlaces.find((place) => place.isDefaultSelection) ?? discoveredPlaces[0];
-
-  if (!selected) return null;
 
   return (
     <main className="your-world-page">
@@ -89,14 +89,14 @@ export function YourWorldPage({ onExplore }: { onExplore: () => void }) {
                   key={place.id}
                   place={place}
                   discovered={Boolean(discoveries[place.id])}
-                  selected={place.id === selected.id}
+                  selected={place.id === selected?.id}
                   onSelect={() => setSelectedId(place.id)}
                 />
               ))}
             </div>
           </div>
         </div>
-        <PlaceNotePanel place={selected} discoveredAt={discoveries[selected.id]} />
+        {selected ? <PlaceNotePanel place={selected} discoveredAt={discoveries[selected.id]} /> : <aside className="place-note" aria-live="polite" />}
       </section>
     </main>
   );
