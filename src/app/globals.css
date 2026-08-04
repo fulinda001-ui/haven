@@ -8,12 +8,18 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
 img { display: block; max-width: 100%; }
 
+.primary-nav { position:absolute; z-index:5; top:clamp(28px, 5vw, 72px); right:clamp(28px, 5vw, 72px); display:flex; align-items:center; gap:22px; color:var(--muted); font-size:12px; letter-spacing:.04em; }
+.primary-nav button,.primary-nav span { padding:0; border-bottom:1px solid transparent; background:transparent; }
+.primary-nav button:hover { color:var(--ink); border-color:currentColor; }
+.primary-nav span { color:var(--ink); }
+.primary-nav button:focus-visible { outline-color:var(--ink); }
+
 .escape-home { min-height: 100svh; padding: clamp(28px, 5vw, 72px); display: grid; align-content: center; gap: clamp(42px, 7vw, 88px); }
 .home-intro { max-width: 760px; margin: 0 auto; text-align: center; }
 .wordmark { margin: 0 0 30px; font: 500 13px "DM Sans"; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 .home-intro h1 { margin: 0; font: 500 clamp(46px, 7vw, 92px)/.98 "Playfair Display", serif; letter-spacing: -.055em; }
 .home-intro span { display: block; margin-top: 24px; color: var(--muted); font-size: 15px; }
-.mood-posters { width: min(1320px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
+.mood-posters { width: min(1320px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 13px; }
 .mood-poster { position: relative; min-height: min(55vw, 500px); overflow: hidden; text-align: left; isolation: isolate; background: #1e241f; }
 .mood-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 600ms ease; }
 .mood-poster:hover img { transform: scale(1.02); }
@@ -26,6 +32,52 @@ img { display: block; max-width: 100%; }
 .poster-copy i, .enter-scene i, .scene-poster-link i { margin-left: 12px; font-size: 16px; font-style: normal; }
 .home-whisper { margin: -22px 0 0; text-align: center; color: var(--muted); font-size: 12px; }
 
+/* Your World — a quiet, responsive atlas rather than an interactive map. */
+.your-world-page { position:relative; isolation:isolate; min-height:100svh; padding:clamp(30px,5vw,72px); background:#f3efe8; }
+.your-world-page::before { content:""; position:absolute; z-index:0; inset:0; pointer-events:none; opacity:.018; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E"); }
+.your-world-page > * { position:relative; z-index:1; }
+.your-world-page > .primary-nav { position:absolute; }
+.your-world-heading { width:min(1360px,100%); margin:clamp(54px,8.5vh,96px) auto clamp(4px,.8vw,12px); }
+.your-world-heading p { margin:0 0 13px; color:#7f776c; font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+.your-world-heading h2 { margin:0; color:#2d2a26; font:500 clamp(44px,5.6vw,78px)/.98 "Playfair Display",serif; letter-spacing:-.055em; }
+.your-world-heading span { display:block; margin-top:12px; color:#756f67; font-size:14px; }
+.world-atlas { width:min(1440px,100%); margin:0 auto; display:grid; grid-template-columns:minmax(0,2.35fr) minmax(250px,.88fr); align-items:stretch; gap:clamp(34px,5vw,84px); }
+.world-map-wrap { min-width:0; display:flex; align-items:center; }
+.world-map { position:relative; width:109%; margin-left:-4.5%; aspect-ratio:3 / 2; }
+.world-map > img { width:100%; height:100%; object-fit:contain; user-select:none; }
+.world-markers { position:absolute; inset:0; }
+.world-marker { position:absolute; transform:translate(-50%,-50%); }
+.world-marker--undiscovered { width:8px; height:8px; border:1px solid #b8aea0; border-radius:50%; opacity:.58; }
+.world-marker--discovered { display:flex; align-items:center; gap:8px; padding:7px; background:transparent; color:#504237; transition:transform 240ms ease; }
+.world-marker--discovered:hover { transform:translate(-50%,-50%) scale(1.035); }
+.world-marker--discovered:focus-visible { outline:2px solid #7d6040; outline-offset:3px; }
+.world-marker--discovered::after { content:""; position:absolute; left:1px; top:1px; width:23px; height:23px; border:1px solid #a77e4b8c; border-radius:50%; opacity:0; pointer-events:none; transition:opacity 240ms ease; }
+.world-marker-dot { width:9px; height:9px; flex:0 0 auto; border:2px solid #f3efe8; border-radius:50%; background:#ad8150; box-shadow:none; transition:width 240ms ease,height 240ms ease,background 240ms ease,box-shadow 240ms ease; }
+.world-marker-name { color:#524337; font:500 13px "DM Sans",sans-serif; letter-spacing:.01em; text-shadow:0 1px 8px #f3efe8, 0 0 6px #f3efe8; }
+.world-marker--hokkaido .world-marker-name { transform:translate(3px,-11px); }
+.world-marker--kyoto .world-marker-name { transform:translate(3px,11px); }
+.world-marker--iceland .world-marker-name { transform:translate(-18px,12px); }
+.world-marker--norway .world-marker-name { transform:translate(5px,12px); }
+.world-marker--finland .world-marker-name { transform:translate(5px,-12px); }
+.world-marker--provence .world-marker-name { transform:translate(-18px,13px); }
+.world-marker--tuscany .world-marker-name { transform:translate(5px,15px); }
+.world-marker--seoul .world-marker-name { transform:translate(-8px,12px); }
+.world-marker--discovered.is-selected { transform:translate(-50%,-50%) scale(1.1); }
+.world-marker--discovered.is-selected::after { opacity:1; }
+.world-marker--discovered.is-selected .world-marker-dot { width:11px; height:11px; background:#9c6f3f; box-shadow:0 0 0 4px #a77e4b30, 0 0 15px #a77e4b5f; }
+.world-marker--discovered.is-selected .world-marker-name { color:#2d2722; }
+.place-note { min-height:100%; display:flex; align-items:center; padding:clamp(20px,3vw,40px) 0 clamp(20px,3vw,40px) clamp(28px,4vw,66px); border-left:1px solid #d9d1c6; }
+.place-note-content { max-width:300px; animation:place-note-arrive 280ms ease both; }
+.place-note-eyebrow { margin:0 0 22px; color:#8a7968; font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
+.place-note h1 { margin:0; color:#29251f; font:500 clamp(38px,4vw,58px)/.98 "Playfair Display",serif; letter-spacing:-.055em; }
+.place-note-country { margin:10px 0 34px; color:#756d63; font-size:13px; }
+.place-note-copy { margin:0; color:#4d4942; font:500 20px/1.52 "Playfair Display",serif; letter-spacing:-.018em; }
+.place-note-moment { display:grid; gap:7px; margin-top:30px; color:#8a7968; font-size:10px; letter-spacing:.13em; text-transform:uppercase; }
+.place-note-moment p { margin:0; color:#4c463e; font:500 15px "Playfair Display",serif; letter-spacing:-.01em; text-transform:none; }
+.place-note-discovered { display:grid; gap:7px; margin-top:42px; color:#8a7968; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.place-note-discovered time { color:#454038; letter-spacing:.04em; }
+@keyframes place-note-arrive { from { opacity:0; } to { opacity:1; } }
+
 .mood-collection { min-height: 100svh; padding: clamp(30px, 5vw, 74px); }
 .quiet-back { padding: 0; background: transparent; color: var(--muted); font-size: 13px; }
 .mood-collection header { width: min(100%, 1120px); margin: clamp(74px, 11vh, 130px) auto 50px; }
@@ -35,6 +87,7 @@ img { display: block; max-width: 100%; }
 .scene-poster { min-height: 520px; display: flex; flex-direction: column; overflow: hidden; background: #f9f9f6; cursor: pointer; }
 .scene-poster:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
 .scene-poster > img { width: 100%; height: 335px; object-fit: cover; transition: transform 600ms ease; }
+.scene-poster--finland > img { object-position: center 62%; }
 .scene-poster:hover > img { transform: scale(1.02); }
 .scene-poster-copy { padding: 22px 22px 25px; display: grid; align-content: start; gap: 10px; }
 .scene-poster-copy p { margin: 0; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
@@ -109,6 +162,52 @@ img { display: block; max-width: 100%; }
     border-radius 1600ms cubic-bezier(.22,1,.36,1),
     transform 1600ms cubic-bezier(.22,1,.36,1);
 }
+.scene-stage--hokkaido-cabin .shared-scene-frame { background:#263329; }
+.scene-stage--hokkaido-cabin .living-scene-image { background-color:#263329; }
+.scene-stage--hokkaido-cabin .hokkaido-hero-image { opacity:0; transition:opacity 420ms ease; }
+.scene-stage--hokkaido-cabin .hokkaido-hero-image.is-ready { opacity:1; }
+.scene-stage--hokkaido-cabin .hokkaido-hero-image.has-error { background:radial-gradient(ellipse at 63% 42%,#526b58 0%,#263329 62%); }
+/* Iceland Black Beach Cabin is a completely static photograph in this phase. */
+.scene-stage--iceland-aurora-lodge .camera-scale,
+.scene-stage--iceland-aurora-lodge .camera-drift-x,
+.scene-stage--iceland-aurora-lodge .camera-drift-y { animation:none; }
+.scene-stage--iceland-aurora-lodge .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--iceland-aurora-lodge .ambient-light,
+.scene-stage--iceland-aurora-lodge .scene-grain { display:none; }
+/* Finland keeps the photographed cabin completely still. Its only Phase 2 motion
+   is the contained, distant aurora overlay rendered outside the glass roof. */
+.scene-stage--finland-glass-cabin .camera-scale,
+.scene-stage--finland-glass-cabin .camera-drift-x,
+.scene-stage--finland-glass-cabin .camera-drift-y { animation:none; }
+.scene-stage--finland-glass-cabin .ambient-light { animation:none; }
+/* Norwegian Fjord House is intentionally a completely static first phase. */
+.scene-stage--norwegian-fjord-house .camera-scale,
+.scene-stage--norwegian-fjord-house .camera-drift-x,
+.scene-stage--norwegian-fjord-house .camera-drift-y { animation:none; }
+.scene-stage--norwegian-fjord-house .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--norwegian-fjord-house .ambient-light,
+.scene-stage--norwegian-fjord-house .scene-grain { display:none; }
+/* Provence Kitchen is a still photograph in its first visual phase. */
+.scene-stage--provence-kitchen .camera-scale,
+.scene-stage--provence-kitchen .camera-drift-x,
+.scene-stage--provence-kitchen .camera-drift-y { animation:none; }
+.scene-stage--provence-kitchen .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--provence-kitchen .ambient-light,
+.scene-stage--provence-kitchen .scene-grain { display:none; }
+/* Tuscany Summer Villa is a still photograph in its first visual phase. */
+.scene-stage--tuscany-summer-villa .camera-scale,
+.scene-stage--tuscany-summer-villa .camera-drift-x,
+.scene-stage--tuscany-summer-villa .camera-drift-y { animation:none; }
+.scene-stage--tuscany-summer-villa .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--tuscany-summer-villa .ambient-light,
+.scene-stage--tuscany-summer-villa .scene-grain { display:none; }
+/* Seoul Rooftop Sunset is intentionally a calm, unprocessed still photograph. */
+.scene-stage--seoul-rooftop-sunset .camera-scale,
+.scene-stage--seoul-rooftop-sunset .camera-drift-x,
+.scene-stage--seoul-rooftop-sunset .camera-drift-y { animation:none; }
+.scene-stage--seoul-rooftop-sunset .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--seoul-rooftop-sunset .ambient-light,
+.scene-stage--seoul-rooftop-sunset .scene-grain { display:none; }
 .scene-stage.is-intro { background: var(--paper); color: var(--ink); }
 .scene-stage.is-intro .shared-scene-frame {
   left: clamp(30px, 6vw, 104px);
@@ -140,6 +239,23 @@ img { display: block; max-width: 100%; }
 .scene-stage.is-intro.is-entering .scene-introduction-copy { transform: translateY(calc(-50% - 5px)); }
 .scene-stage.is-entering .scene-transition-veil { opacity: 0 !important; animation: none !important; }
 @keyframes camera-scale{0%,100%{transform:scale(1.021)}22%{transform:scale(1.029)}49%{transform:scale(1.035)}71%{transform:scale(1.03)}}@keyframes camera-drift-x{0%,100%{transform:translate3d(1px,0,0)}19%{transform:translate3d(-4px,0,0)}46%{transform:translate3d(-1px,0,0)}74%{transform:translate3d(7px,0,0)}}@keyframes camera-drift-y{0%,100%{transform:translate3d(0,-1px,0)}31%{transform:translate3d(0,-6px,0)}58%{transform:translate3d(0,2px,0)}82%{transform:translate3d(0,-3px,0)}}
+
+/* Finnish Glass Cabin: five independently evolving ribbons remain inside the
+   photographed glass roof. The coordinate plane follows the source's 3:2 cover
+   geometry, keeping the sky mask anchored across responsive image crops. */
+.finland-aurora-layer { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.finland-aurora-coordinate { position:absolute; left:50%; top:50%; width:max(100%,150svh); aspect-ratio:3 / 2; transform:translate(-50%,-50%); overflow:hidden; }
+.finland-aurora { position:absolute; display:block; transform-origin:50% 54%; mix-blend-mode:screen; pointer-events:none; will-change:transform,opacity,clip-path; }
+.finland-aurora--background-curtain { left:13%; top:5%; width:40%; height:55%; opacity:.064; filter:blur(24px) brightness(1) saturate(1); background:radial-gradient(ellipse at 48% 64%,#84e7ad70 0%,#62c8974c 39%,#4e80a524 64%,transparent 80%); animation:finland-curtain-evolve 34s cubic-bezier(.42,0,.58,1) -13s infinite alternate both; }
+.finland-aurora--green-flow { left:25%; top:7%; width:36%; height:52%; opacity:.078; filter:blur(15px) brightness(1) saturate(1); background:linear-gradient(106deg,transparent 4%,#6ddca84c 25%,#a1f4b179 48%,#5fcba96c 70%,transparent 94%); animation:finland-green-flow-evolve 42s cubic-bezier(.44,0,.56,1) -29s infinite alternate both; }
+.finland-aurora--cyan-ribbon { left:49%; top:6%; width:35%; height:51%; opacity:.075; filter:blur(14px) brightness(1) saturate(1); background:linear-gradient(93deg,transparent 2%,#5fb8b955 20%,#8ce5d286 48%,#58baae62 76%,transparent 98%); animation:finland-cyan-ribbon-evolve 53s cubic-bezier(.4,0,.6,1) -37s infinite alternate both; }
+.finland-aurora--violet-edge { left:34%; top:4%; width:22%; height:54%; opacity:.046; filter:blur(18px) brightness(1) saturate(1); background:linear-gradient(100deg,transparent 5%,#9f88d45a 31%,#c1a1dc75 51%,#8086c858 71%,transparent 96%); animation:finland-violet-edge-evolve 47s cubic-bezier(.46,0,.54,1) -21s infinite alternate both; }
+.finland-aurora--diffuse-glow { left:22%; top:13%; width:58%; height:40%; opacity:.043; filter:blur(30px) brightness(1) saturate(1); background:radial-gradient(ellipse at 53% 55%,#a2ead86b 0%,#71c9c94d 34%,#858bc14a 57%,transparent 79%); animation:finland-glow-evolve 61s cubic-bezier(.43,0,.57,1) -48s infinite alternate both; }
+@keyframes finland-curtain-evolve { 0% { opacity:.053; filter:blur(24px) brightness(.92) saturate(.97); clip-path:polygon(0 38%,78% 0,100% 37%,93% 100%,8% 100%,0 74%); transform:translate3d(-3.8%,2.8%,0) scale(.72,.8) rotate(-12deg); } 31% { opacity:.071; filter:blur(24px) brightness(1.1) saturate(1.06); clip-path:polygon(0 21%,67% 0,100% 44%,100% 91%,21% 100%,0 62%); transform:translate3d(1.4%,-2.6%,0) scale(1.2,1.25) rotate(-1deg); } 66% { opacity:.059; filter:blur(24px) brightness(.98) saturate(1); clip-path:polygon(0 49%,88% 0,100% 23%,83% 100%,5% 94%,0 70%); transform:translate3d(3.2%,1.2%,0) scale(.82,1.16) rotate(-10deg); } 100% { opacity:.066; filter:blur(24px) brightness(1.06) saturate(1.04); clip-path:polygon(0 26%,73% 0,100% 53%,96% 100%,16% 94%,0 68%); transform:translate3d(-.5%,-.7%,0) scale(1.18,.92) rotate(-4deg); } }
+@keyframes finland-green-flow-evolve { 0% { opacity:.063; filter:blur(15px) brightness(.94) saturate(.98); clip-path:polygon(0 56%,14% 33%,44% 15%,72% 32%,100% 10%,91% 67%,65% 84%,31% 72%,7% 91%); transform:translate3d(3.6%,2.2%,0) scale(1.2,.76) rotate(9deg); } 26% { opacity:.086; filter:blur(15px) brightness(1.16) saturate(1.07); clip-path:polygon(0 35%,19% 13%,42% 28%,70% 5%,100% 28%,94% 74%,68% 92%,36% 68%,8% 80%); transform:translate3d(-1.6%,-2.5%,0) scale(.73,1.27) rotate(-4deg); } 61% { opacity:.069; filter:blur(15px) brightness(.99) saturate(1.01); clip-path:polygon(0 67%,18% 34%,45% 8%,72% 38%,100% 18%,90% 62%,72% 98%,34% 72%,8% 96%); transform:translate3d(-3.1%,1.1%,0) scale(1.16,1.08) rotate(11deg); } 100% { opacity:.08; filter:blur(15px) brightness(1.09) saturate(1.04); clip-path:polygon(0 43%,17% 18%,48% 35%,69% 10%,100% 35%,96% 80%,64% 88%,32% 65%,5% 85%); transform:translate3d(.4%,-.8%,0) scale(.82,1.2) rotate(1deg); } }
+@keyframes finland-cyan-ribbon-evolve { 0% { opacity:.06; filter:blur(14px) brightness(.9) saturate(.96); clip-path:polygon(0 62%,18% 39%,37% 11%,62% 31%,100% 5%,92% 63%,73% 88%,41% 73%,9% 96%); transform:translate3d(-3.4%,2.6%,0) scale(.76,.79) rotate(-10deg); } 29% { opacity:.084; filter:blur(14px) brightness(1.18) saturate(1.08); clip-path:polygon(0 27%,21% 6%,42% 29%,66% 4%,100% 31%,96% 78%,71% 95%,38% 70%,5% 84%); transform:translate3d(1.8%,-2.9%,0) scale(1.23,1.28) rotate(3deg); } 68% { opacity:.066; filter:blur(14px) brightness(.98) saturate(1); clip-path:polygon(0 70%,17% 42%,40% 13%,63% 39%,100% 15%,87% 58%,69% 98%,35% 76%,9% 93%); transform:translate3d(3.6%,.9%,0) scale(.84,1.12) rotate(-11deg); } 100% { opacity:.078; filter:blur(14px) brightness(1.1) saturate(1.04); clip-path:polygon(0 39%,15% 18%,44% 36%,69% 9%,100% 38%,94% 82%,66% 90%,33% 66%,4% 86%); transform:translate3d(-.3%,-.6%,0) scale(1.17,.9) rotate(-2deg); } }
+@keyframes finland-violet-edge-evolve { 0% { opacity:.038; filter:blur(18px) brightness(.9) saturate(.96); clip-path:polygon(13% 0,70% 5%,100% 45%,78% 100%,20% 94%,0 42%); transform:translate3d(-3%,2.1%,0) scale(.76,.82) rotate(-13deg); } 35% { opacity:.055; filter:blur(18px) brightness(1.14) saturate(1.06); clip-path:polygon(4% 0,88% 0,100% 55%,66% 100%,8% 89%,0 31%); transform:translate3d(1.4%,-2.2%,0) scale(1.23,1.22) rotate(5deg); } 71% { opacity:.042; filter:blur(18px) brightness(.97) saturate(1); clip-path:polygon(20% 0,74% 0,100% 38%,87% 94%,18% 100%,0 54%); transform:translate3d(2.5%,.7%,0) scale(.85,1.13) rotate(-10deg); } 100% { opacity:.051; filter:blur(18px) brightness(1.08) saturate(1.04); clip-path:polygon(6% 0,85% 0,100% 49%,72% 100%,12% 91%,0 36%); transform:translate3d(-.4%,-.5%,0) scale(1.16,.91) rotate(-2deg); } }
+@keyframes finland-glow-evolve { 0% { opacity:.035; filter:blur(30px) brightness(.9) saturate(.97); clip-path:ellipse(39% 35% at 50% 54%); transform:translate3d(2.7%,1.8%,0) scale(.8,.78); } 32% { opacity:.054; filter:blur(30px) brightness(1.2) saturate(1.06); clip-path:ellipse(52% 47% at 46% 48%); transform:translate3d(-1.2%,-2.1%,0) scale(1.2,1.26); } 69% { opacity:.04; filter:blur(30px) brightness(.98) saturate(1); clip-path:ellipse(43% 31% at 57% 57%); transform:translate3d(-2.9%,.9%,0) scale(.86,1.1); } 100% { opacity:.049; filter:blur(30px) brightness(1.08) saturate(1.04); clip-path:ellipse(48% 41% at 51% 51%); transform:translate3d(.2%,-.6%,0) scale(1.14,.9); } }
 
 /* Kyoto Rainy Café: a scene-specific living layer. It is deliberately absent
    from Hokkaido so its approved motion and soundscape remain untouched. */
@@ -177,4 +293,74 @@ img { display: block; max-width: 100%; }
 .kyoto-window-rain-pane > .kyoto-window-rain--merge::before,.kyoto-window-rain-pane > .kyoto-window-rain--merge::after { width:4px; height:7px; background:#eff8ff9c; }
 @keyframes kyoto-steam-continuous { 0% { opacity:0; filter:blur(3px); transform:translate3d(0,9px,0) scale(.72,.72) rotate(0deg); } 14% { opacity:.11; } 48% { opacity:var(--steam-opacity); filter:blur(4.4px); transform:translate3d(-4px,-34px,0) scale(1.04,1.13) rotate(-3deg); } 76% { opacity:.07; filter:blur(6px); transform:translate3d(var(--steam-drift),-84px,0) scale(1.28,1.42) rotate(var(--steam-curl)); } 100% { opacity:0; filter:blur(7px); transform:translate3d(4px,-116px,0) scale(1.42,1.6) rotate(3deg); } }
 @keyframes kyoto-rain-slide { 0% { opacity:0; transform:translate3d(0,0,0) scaleY(.72); } 11% { opacity:var(--rain-opacity); } 54% { opacity:.16; transform:translate3d(1px,36vh,0) scaleY(1.04); } 80% { opacity:.1; transform:translate3d(var(--rain-drift),69vh,0) scaleY(1.24); } 100% { opacity:0; transform:translate3d(2px,98vh,0) scaleY(.88); } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer{display:none}.scene-transition-veil{display:none} }
+
+/* Swiss Lakes: separate, feathered clusters stay near the distant waterline.
+   The pier and foreground remain clear, while each cluster follows its own slow air current. */
+.swiss-mist-layer { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.swiss-mist { position:absolute; border-radius:50%; background:radial-gradient(ellipse at center, #e8eef0bd 0%, #e8eef084 31%, #e8eef026 63%, transparent 78%); filter:blur(25px); mix-blend-mode:screen; will-change:transform,opacity; }
+.swiss-mist--shore-left { top:45.5%; left:-13%; width:54%; height:10%; opacity:.14; animation:swiss-mist-shore-left 97s cubic-bezier(.42,0,.58,1) -46s infinite alternate both; }
+.swiss-mist--shore-centre { top:47%; left:25%; width:50%; height:11%; opacity:.17; filter:blur(31px); animation:swiss-mist-shore-centre 83s cubic-bezier(.4,0,.6,1) -27s infinite alternate both; }
+.swiss-mist--shore-right { top:45.8%; left:61%; width:54%; height:10%; opacity:.14; filter:blur(28px); animation:swiss-mist-shore-right 109s cubic-bezier(.44,0,.56,1) -68s infinite alternate both; }
+.swiss-mist--lake-left { top:52%; left:-8%; width:43%; height:9%; opacity:.09; filter:blur(34px); animation:swiss-mist-lake-left 71s cubic-bezier(.46,0,.54,1) -34s infinite alternate both; }
+.swiss-mist--lake-right { top:53%; left:67%; width:43%; height:8%; opacity:.075; filter:blur(30px); animation:swiss-mist-lake-right 121s cubic-bezier(.41,0,.59,1) -73s infinite alternate both; }
+@keyframes swiss-mist-shore-left { 0% { transform:translate3d(-3vw,.1vh,0) scaleX(.97); opacity:.115; } 26% { transform:translate3d(-4vw,.05vh,0) scaleX(.985); opacity:.14; } 58% { transform:translate3d(1vw,-.12vh,0) scaleX(1.015); opacity:.13; } 100% { transform:translate3d(5vw,-.2vh,0) scaleX(1.035); opacity:.145; } }
+@keyframes swiss-mist-shore-centre { 0% { transform:translate3d(3vw,.15vh,0) scaleX(1.02); opacity:.14; } 29% { transform:translate3d(2.5vw,.06vh,0) scaleX(1.025); opacity:.17; } 64% { transform:translate3d(-2vw,-.13vh,0) scaleX(.99); opacity:.15; } 100% { transform:translate3d(-5vw,-.1vh,0) scaleX(.97); opacity:.165; } }
+@keyframes swiss-mist-shore-right { 0% { transform:translate3d(-5vw,0,0) scaleX(.98); opacity:.12; } 35% { transform:translate3d(-4.5vw,-.04vh,0) scaleX(.99); opacity:.145; } 67% { transform:translate3d(1vw,.11vh,0) scaleX(1.025); opacity:.125; } 100% { transform:translate3d(6vw,.18vh,0) scaleX(1.04); opacity:.14; } }
+@keyframes swiss-mist-lake-left { 0% { transform:translate3d(4vw,.2vh,0) scaleX(1.03); opacity:.065; } 32% { transform:translate3d(4.5vw,.18vh,0) scaleX(1.035); opacity:.09; } 70% { transform:translate3d(-2vw,-.08vh,0) scaleX(.98); opacity:.075; } 100% { transform:translate3d(-4vw,-.1vh,0) scaleX(.965); opacity:.085; } }
+@keyframes swiss-mist-lake-right { 0% { transform:translate3d(-4vw,.1vh,0) scaleX(.98); opacity:.055; } 28% { transform:translate3d(-3.5vw,.05vh,0) scaleX(.99); opacity:.075; } 61% { transform:translate3d(2vw,-.09vh,0) scaleX(1.015); opacity:.065; } 100% { transform:translate3d(5vw,-.16vh,0) scaleX(1.03); opacity:.075; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer{display:none}.scene-transition-veil{display:none} }
+
+@media (max-width: 780px) {
+  .escape-home,.mood-collection,.your-world-page { padding:28px 22px; }
+  .primary-nav { top:28px; right:22px; gap:16px; }
+  .your-world-heading { margin-top:108px; margin-bottom:14px; }
+  .world-atlas { grid-template-columns:1fr; gap:26px; }
+  .place-note { min-height:auto; padding:30px 0 18px; border-top:1px solid #d9d1c6; border-left:0; }
+  .place-note-content { max-width:460px; }
+  .place-note-copy { font-size:19px; }
+  .world-marker--discovered { gap:5px; padding:5px; }
+  .world-marker-name { font-size:10px; }
+  .world-marker-dot { width:8px; height:8px; }
+  .world-marker--discovered.is-selected .world-marker-dot { width:10px; height:10px; }
+}
+
+@media (max-width: 560px) {
+  .world-marker--iceland .world-marker-name,
+  .world-marker--norway .world-marker-name,
+  .world-marker--finland .world-marker-name,
+  .world-marker--provence .world-marker-name,
+  .world-marker--tuscany .world-marker-name { display:none; }
+}
+
+.primary-nav--world button { color:#98958e; border-color:transparent; }
+.primary-nav--world button:hover { color:#74716a; border-color:transparent; }
+.primary-nav--world span { color:#3f3b34; }
+
+.dev-tools { position:fixed; z-index:30; right:18px; bottom:16px; display:grid; justify-items:end; gap:8px; }
+.dev-tools-toggle { padding:5px 7px; border:1px solid #b9b2a8; background:#f3efe8e8; color:#817a70; font-size:10px; letter-spacing:.06em; }
+.dev-tools-toggle:hover { color:#514b43; border-color:#93897c; }
+.dev-tools-toggle:focus-visible,.dev-tools-panel button:focus-visible { outline-color:#796b5b; }
+.dev-tools-panel { min-width:176px; padding:8px; border:1px solid #cfc6ba; background:#f3efe8f7; color:#514b43; font-size:11px; }
+.dev-tools-actions button { width:100%; padding:8px 9px; background:transparent; text-align:left; }
+.dev-tools-actions button:hover { background:#e8e1d7; }
+.dev-tools-confirm { display:grid; gap:10px; padding:3px; }
+.dev-tools-confirm p { margin:0; line-height:1.4; }
+.dev-tools-confirm div { display:flex; justify-content:flex-end; gap:12px; }
+.dev-tools-confirm button { padding:3px 0; background:transparent; color:#777067; font-size:10px; }
+.dev-tools-confirm .dev-tools-reset { color:#6e4b36; }
+
+/* Session Timer: deliberately quiet, present only when a visitor asks for it. */
+.session-timer { position:relative; }
+.session-timer-panel { position:absolute; right:0; bottom:calc(100% + 10px); width:216px; padding:14px; border:1px solid #ffffff4d; background:#17201ada; color:#fff; backdrop-filter:blur(14px); box-shadow:0 14px 34px #08100836; }
+.session-timer-panel p { margin:0 0 10px; font:500 15px/1.2 "Playfair Display",serif; letter-spacing:-.01em; }
+.session-timer-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.scene-controls .session-timer-panel button { width:100%; padding:8px 9px; border-color:#ffffff38; background:#ffffff0f; text-align:left; }
+.scene-controls .session-timer-panel button[aria-pressed="true"] { background:#ffffff2a; border-color:#ffffff85; }
+.session-timer-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:10px; }
+.session-timer-actions .session-end { grid-column:1 / -1; color:#fff9; }
+.session-announcement { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.session-complete { position:absolute; z-index:3; right:clamp(20px,3vw,42px); bottom:clamp(82px,10vw,112px); width:min(290px,calc(100vw - 40px)); padding:17px 18px; border:1px solid #ffffff52; background:#17201add; color:#fff; backdrop-filter:blur(16px); box-shadow:0 16px 48px #08100848; }
+.session-complete p { margin:0 0 12px; font:500 20px/1.15 "Playfair Display",serif; }
+.session-complete div { display:grid; gap:6px; }
+.session-complete button { width:100%; padding:9px 10px; border:1px solid #ffffff55; background:#ffffff12; color:#fff; text-align:left; font-size:11px; }
+.scene-controls button:focus-visible,.session-complete button:focus-visible { outline:2px solid #fff; outline-offset:3px; }

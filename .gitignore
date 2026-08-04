@@ -4,6 +4,9 @@ node_modules/
 # Next.js build output and local caches
 .next/
 out/
+dist/
+build/
+.vercel/
 *.tsbuildinfo
 
 # Local environment settings (keep a committed .env.example if one is added)
@@ -13,6 +16,7 @@ out/
 # Logs and operating-system files
 *.log
 .DS_Store
+coverage/
 
 # Local editor settings
 .vscode/
