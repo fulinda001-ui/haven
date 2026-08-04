@@ -62,6 +62,7 @@ img { display: block; max-width: 100%; }
 .world-marker--provence .world-marker-name { transform:translate(-18px,13px); }
 .world-marker--tuscany .world-marker-name { transform:translate(5px,15px); }
 .world-marker--seoul .world-marker-name { transform:translate(-8px,12px); }
+.world-marker--bali .world-marker-name { transform:translate(5px,13px); }
 .world-marker--discovered.is-selected { transform:translate(-50%,-50%) scale(1.1); }
 .world-marker--discovered.is-selected::after { opacity:1; }
 .world-marker--discovered.is-selected .world-marker-dot { width:11px; height:11px; background:#9c6f3f; box-shadow:0 0 0 4px #a77e4b30, 0 0 15px #a77e4b5f; }
@@ -208,6 +209,26 @@ img { display: block; max-width: 100%; }
 .scene-stage--seoul-rooftop-sunset .camera-enter-leave { transform:none !important; transition:none; }
 .scene-stage--seoul-rooftop-sunset .ambient-light,
 .scene-stage--seoul-rooftop-sunset .scene-grain { display:none; }
+
+/* Bali Sunrise House: light through early mist, with only the smallest movement
+   in the bamboo canopy. The scene itself remains the photograph. */
+.scene-stage--bali-sunrise-house.is-active .camera-scale { animation:bali-sunrise-push 46s cubic-bezier(.45,0,.55,1) both; }
+.scene-stage--bali-sunrise-house.is-active .camera-drift-x { animation:bali-sunrise-drift 64s cubic-bezier(.45,0,.55,1) infinite alternate both; }
+.scene-stage--bali-sunrise-house .ambient-light-warm { background:radial-gradient(ellipse at 76% 48%,#ffd67b78 0,transparent 43%); opacity:.07; animation:bali-sunrise-glow 38s ease-in-out infinite alternate; }
+.scene-stage--bali-sunrise-house .ambient-light-cool { background:radial-gradient(ellipse at 30% 45%,#9cc9c269 0,transparent 52%); opacity:.025; }
+.bali-morning-layer { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.bali-sunrise-haze { position:absolute; inset:44% -8% -12% 0; background:radial-gradient(ellipse at 72% 38%,#ffe3a13a 0,transparent 42%),linear-gradient(180deg,transparent,#ffd99d12); mix-blend-mode:screen; animation:bali-haze-breathe 43s cubic-bezier(.45,0,.55,1) infinite alternate; }
+.bali-leaf { position:absolute; display:block; top:-2%; width:21%; height:31%; opacity:.13; filter:blur(.9px); transform-origin:top center; background:radial-gradient(ellipse at 48% 25%,#2b4e2a88 0 6%,transparent 7%),radial-gradient(ellipse at 56% 43%,#31592c77 0 5%,transparent 6%),radial-gradient(ellipse at 41% 67%,#28472475 0 6%,transparent 7%); }
+.bali-leaf--one { right:-2%; animation:bali-leaves-one 21s cubic-bezier(.45,0,.55,1) infinite alternate; }
+.bali-leaf--two { right:12%; top:-6%; width:15%; height:25%; opacity:.09; animation:bali-leaves-two 29s cubic-bezier(.45,0,.55,1) -9s infinite alternate; }
+.bali-leaf--three { left:-7%; top:13%; width:13%; height:21%; opacity:.055; animation:bali-leaves-three 34s cubic-bezier(.45,0,.55,1) -16s infinite alternate; }
+@keyframes bali-sunrise-push { from { transform:scale(1.014); } to { transform:scale(1.035); } }
+@keyframes bali-sunrise-drift { from { transform:translate3d(-2px,1px,0); } to { transform:translate3d(3px,-1px,0); } }
+@keyframes bali-sunrise-glow { from { opacity:.058; } to { opacity:.078; } }
+@keyframes bali-haze-breathe { 0% { opacity:.72; transform:translate3d(-.5%,.3%,0) scale(1); } 100% { opacity:1; transform:translate3d(1%,-.4%,0) scale(1.035); } }
+@keyframes bali-leaves-one { from { transform:rotate(-1.5deg) translate3d(0,0,0); } to { transform:rotate(1.7deg) translate3d(4px,2px,0); } }
+@keyframes bali-leaves-two { from { transform:rotate(1deg); } to { transform:rotate(-1.2deg) translate3d(-2px,1px,0); } }
+@keyframes bali-leaves-three { from { transform:rotate(-.8deg); } to { transform:rotate(1.1deg) translate3d(2px,-1px,0); } }
 .scene-stage.is-intro { background: var(--paper); color: var(--ink); }
 .scene-stage.is-intro .shared-scene-frame {
   left: clamp(30px, 6vw, 104px);
@@ -308,7 +329,7 @@ img { display: block; max-width: 100%; }
 @keyframes swiss-mist-shore-right { 0% { transform:translate3d(-5vw,0,0) scaleX(.98); opacity:.12; } 35% { transform:translate3d(-4.5vw,-.04vh,0) scaleX(.99); opacity:.145; } 67% { transform:translate3d(1vw,.11vh,0) scaleX(1.025); opacity:.125; } 100% { transform:translate3d(6vw,.18vh,0) scaleX(1.04); opacity:.14; } }
 @keyframes swiss-mist-lake-left { 0% { transform:translate3d(4vw,.2vh,0) scaleX(1.03); opacity:.065; } 32% { transform:translate3d(4.5vw,.18vh,0) scaleX(1.035); opacity:.09; } 70% { transform:translate3d(-2vw,-.08vh,0) scaleX(.98); opacity:.075; } 100% { transform:translate3d(-4vw,-.1vh,0) scaleX(.965); opacity:.085; } }
 @keyframes swiss-mist-lake-right { 0% { transform:translate3d(-4vw,.1vh,0) scaleX(.98); opacity:.055; } 28% { transform:translate3d(-3.5vw,.05vh,0) scaleX(.99); opacity:.075; } 61% { transform:translate3d(2vw,-.09vh,0) scaleX(1.015); opacity:.065; } 100% { transform:translate3d(5vw,-.16vh,0) scaleX(1.03); opacity:.075; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer{display:none}.scene-transition-veil{display:none} }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer,.bali-morning-layer{display:none}.scene-transition-veil{display:none} }
 
 @media (max-width: 780px) {
   .escape-home,.mood-collection,.your-world-page { padding:28px 22px; }

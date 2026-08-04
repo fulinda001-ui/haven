@@ -73,6 +73,11 @@ const FINLAND_WIND_AUDIO = "/scenes/finland-glass-cabin/audio/outside-wind.mp3";
 const FINLAND_WIND_BASE_VOLUME = 0.03;
 const NORWEGIAN_FJORD_WATER_AUDIO = "/scenes/norwegian-fjord-house/audio/fjord-water.mp3";
 const NORWEGIAN_FJORD_WATER_BASE_VOLUME = 0.16;
+const BALI_MORNING_AUDIO = "/scenes/bali-sunrise-house/audio/morning-garden.mp3";
+const BALI_MORNING_BASE_VOLUME = 0.16;
+const BALI_TEMPLE_BELL_AUDIO = "/scenes/bali-sunrise-house/audio/temple-bell-single.m4a";
+const BALI_TEMPLE_BELL_VOLUME = 0.038;
+const BALI_TEMPLE_BELL_REPEAT = { minimum: 25_000, maximum: 45_000 } as const;
 
 const randomBetween = (minimum: number, maximum: number) => minimum + Math.random() * (maximum - minimum);
 
@@ -2022,6 +2027,164 @@ class SwissLakesSoundscape {
   }
 }
 
+type OccasionalAudioEvent = {
+  source: string;
+  volume: number;
+  firstDelayMs: number;
+  repeat: { minimum: number; maximum: number };
+};
+
+class SingleAmbientSoundscape {
+  private player: HTMLAudioElement | null = null;
+  private eventPlayer: HTMLAudioElement | null = null;
+  private fadeFrame: number | null = null;
+  private eventTimer: number | null = null;
+  private running = false;
+
+  constructor(
+    private readonly source: string,
+    private readonly volume: number,
+    private readonly fadeInMs = 2000,
+    private readonly occasionalEvent?: OccasionalAudioEvent,
+  ) {}
+
+  private ensure() {
+    if (!this.player) {
+      const audio = new Audio(this.source);
+      audio.preload = "auto";
+      audio.loop = true;
+      audio.muted = false;
+      audio.volume = 0;
+      audio.setAttribute("aria-hidden", "true");
+      audio.style.display = "none";
+      document.body.append(audio);
+      audio.load();
+      this.player = audio;
+    }
+    return this.player;
+  }
+
+  getAmbientAudio() { return this.ensure(); }
+
+  private ensureEvent() {
+    if (!this.occasionalEvent) return null;
+    if (!this.eventPlayer) {
+      const audio = new Audio(this.occasionalEvent.source);
+      audio.preload = "auto";
+      audio.loop = false;
+      audio.muted = false;
+      audio.volume = this.occasionalEvent.volume;
+      audio.setAttribute("aria-hidden", "true");
+      audio.style.display = "none";
+      audio.onended = () => { if (this.running) this.scheduleEvent(); };
+      document.body.append(audio);
+      audio.load();
+      this.eventPlayer = audio;
+    }
+    return this.eventPlayer;
+  }
+
+  private clearEventTimer() {
+    if (this.eventTimer !== null) window.clearTimeout(this.eventTimer);
+    this.eventTimer = null;
+  }
+
+  private scheduleEvent(delay?: number) {
+    if (!this.running || !this.occasionalEvent) return;
+    this.clearEventTimer();
+    const wait = delay ?? randomBetween(this.occasionalEvent.repeat.minimum, this.occasionalEvent.repeat.maximum);
+    this.eventTimer = window.setTimeout(() => {
+      this.eventTimer = null;
+      this.playEvent();
+    }, wait);
+  }
+
+  private playEvent() {
+    if (!this.running || !this.occasionalEvent) return;
+    const audio = this.ensureEvent();
+    if (!audio) return;
+    // The event has no overlap: if it is still decaying, wait for a fresh
+    // irregular interval instead of attempting another strike.
+    if (!audio.paused) {
+      this.scheduleEvent();
+      return;
+    }
+    audio.currentTime = 0;
+    audio.volume = this.occasionalEvent.volume;
+    void audio.play().catch(() => { if (this.running) this.scheduleEvent(); });
+  }
+
+  private stopEvent() {
+    this.clearEventTimer();
+    if (!this.eventPlayer) return;
+    this.eventPlayer.pause();
+    this.eventPlayer.currentTime = 0;
+  }
+
+  private fade(audio: HTMLAudioElement, target: number, duration: number, done?: () => void) {
+    if (this.fadeFrame !== null) cancelAnimationFrame(this.fadeFrame);
+    const from = audio.volume;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - began) / duration);
+      const eased = progress * progress * (3 - 2 * progress);
+      audio.volume = from + (target - from) * eased;
+      if (progress < 1) this.fadeFrame = requestAnimationFrame(tick);
+      else { this.fadeFrame = null; done?.(); }
+    };
+    this.fadeFrame = requestAnimationFrame(tick);
+  }
+
+  startSoundscape() {
+    if (this.running) return;
+    const audio = this.ensure();
+    this.running = true;
+    audio.loop = true;
+    this.fade(audio, this.volume, this.fadeInMs);
+    if (this.occasionalEvent) this.scheduleEvent(this.occasionalEvent.firstDelayMs);
+  }
+
+  pauseSoundscape() {
+    if (!this.player) return;
+    this.running = false;
+    this.stopEvent();
+    this.fade(this.player, 0, 700, () => this.player?.pause());
+  }
+
+  resumeSoundscape() {
+    if (this.running) return;
+    const audio = this.ensure();
+    this.running = true;
+    void audio.play().then(() => this.fade(audio, this.volume, 850)).catch(() => {});
+    if (this.occasionalEvent) this.scheduleEvent(this.occasionalEvent.firstDelayMs);
+  }
+
+  stopSoundscape(fadeMs = 2000) {
+    if (!this.player) return;
+    this.running = false;
+    this.stopEvent();
+    this.fade(this.player, 0, fadeMs, () => {
+      this.player?.pause();
+      if (this.player) this.player.currentTime = 0;
+    });
+  }
+
+  destroy() {
+    this.running = false;
+    this.stopEvent();
+    if (this.fadeFrame !== null) cancelAnimationFrame(this.fadeFrame);
+    this.fadeFrame = null;
+    if (this.player) {
+      this.player.pause();
+      this.player.currentTime = 0;
+      this.player.remove();
+      this.player = null;
+    }
+    this.eventPlayer?.remove();
+    this.eventPlayer = null;
+  }
+}
+
 export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(function AmbientAudio({ sceneId }, ref) {
   const hokkaidoSoundscapeRef = useRef<HokkaidoSoundscape | null>(null);
   const kyotoSoundscapeRef = useRef<KyotoRainSoundscape | null>(null);
@@ -2032,6 +2195,7 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   const finlandFireplaceSoundscapeRef = useRef<FinlandFireplaceSoundscape | null>(null);
   const norwegianFjordSoundscapeRef = useRef<NorwegianFjordSoundscape | null>(null);
   const swissLakesSoundscapeRef = useRef<SwissLakesSoundscape | null>(null);
+  const baliMorningSoundscapeRef = useRef<SingleAmbientSoundscape | null>(null);
   if (!hokkaidoSoundscapeRef.current) hokkaidoSoundscapeRef.current = new HokkaidoSoundscape();
   if (!kyotoSoundscapeRef.current) kyotoSoundscapeRef.current = new KyotoRainSoundscape();
   if (!icelandAuroraSoundscapeRef.current) icelandAuroraSoundscapeRef.current = new IcelandAuroraSoundscape();
@@ -2041,6 +2205,12 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   if (!finlandFireplaceSoundscapeRef.current) finlandFireplaceSoundscapeRef.current = new FinlandFireplaceSoundscape();
   if (!norwegianFjordSoundscapeRef.current) norwegianFjordSoundscapeRef.current = new NorwegianFjordSoundscape();
   if (!swissLakesSoundscapeRef.current) swissLakesSoundscapeRef.current = new SwissLakesSoundscape();
+  if (!baliMorningSoundscapeRef.current) baliMorningSoundscapeRef.current = new SingleAmbientSoundscape(BALI_MORNING_AUDIO, BALI_MORNING_BASE_VOLUME, 2000, {
+    source: BALI_TEMPLE_BELL_AUDIO,
+    volume: BALI_TEMPLE_BELL_VOLUME,
+    firstDelayMs: 3500,
+    repeat: BALI_TEMPLE_BELL_REPEAT,
+  });
   const hokkaidoSoundscape = hokkaidoSoundscapeRef.current;
   const kyotoSoundscape = kyotoSoundscapeRef.current;
   const icelandAuroraSoundscape = icelandAuroraSoundscapeRef.current;
@@ -2050,8 +2220,9 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   const finlandFireplaceSoundscape = finlandFireplaceSoundscapeRef.current;
   const norwegianFjordSoundscape = norwegianFjordSoundscapeRef.current;
   const swissLakesSoundscape = swissLakesSoundscapeRef.current;
+  const baliMorningSoundscape = baliMorningSoundscapeRef.current;
 
-  useEffect(() => () => { hokkaidoSoundscape.destroy(); kyotoSoundscape.destroy(); icelandAuroraSoundscape.destroy(); provenceGardenSoundscape.destroy(); tuscanyTownSoundscape.destroy(); seoulCitySoundscape.destroy(); finlandFireplaceSoundscape.destroy(); norwegianFjordSoundscape.destroy(); swissLakesSoundscape.destroy(); }, [finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, seoulCitySoundscape, swissLakesSoundscape, tuscanyTownSoundscape]);
+  useEffect(() => () => { hokkaidoSoundscape.destroy(); kyotoSoundscape.destroy(); icelandAuroraSoundscape.destroy(); provenceGardenSoundscape.destroy(); tuscanyTownSoundscape.destroy(); seoulCitySoundscape.destroy(); finlandFireplaceSoundscape.destroy(); norwegianFjordSoundscape.destroy(); swissLakesSoundscape.destroy(); baliMorningSoundscape.destroy(); }, [baliMorningSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, seoulCitySoundscape, swissLakesSoundscape, tuscanyTownSoundscape]);
 
   useImperativeHandle(ref, () => ({
     getAmbientAudio: () => {
@@ -2064,6 +2235,7 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "finland-glass-cabin") return finlandFireplaceSoundscape.getAmbientAudio();
       if (sceneId === "norwegian-fjord-house") return norwegianFjordSoundscape.getAmbientAudio();
       if (sceneId === "swiss-lakeside-morning") return swissLakesSoundscape.getAmbientAudio();
+      if (sceneId === "bali-sunrise-house") return baliMorningSoundscape.getAmbientAudio();
       return null;
     },
     startSoundscape: () => {
@@ -2076,6 +2248,7 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "finland-glass-cabin") finlandFireplaceSoundscape.startSoundscape();
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.startSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.startSoundscape();
+      if (sceneId === "bali-sunrise-house") baliMorningSoundscape.startSoundscape();
     },
     pauseSoundscape: () => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.pauseSoundscape();
@@ -2087,6 +2260,7 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "finland-glass-cabin") finlandFireplaceSoundscape.pauseSoundscape();
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.pauseSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.pauseSoundscape();
+      if (sceneId === "bali-sunrise-house") baliMorningSoundscape.pauseSoundscape();
     },
     resumeSoundscape: () => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.resumeSoundscape();
@@ -2098,6 +2272,7 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "finland-glass-cabin") finlandFireplaceSoundscape.resumeSoundscape();
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.resumeSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.resumeSoundscape();
+      if (sceneId === "bali-sunrise-house") baliMorningSoundscape.resumeSoundscape();
     },
     stopSoundscape: (fadeMs?: number) => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.stopSoundscape(fadeMs);
@@ -2109,8 +2284,9 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "finland-glass-cabin") finlandFireplaceSoundscape.stopSoundscape(fadeMs);
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.stopSoundscape(fadeMs);
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.stopSoundscape(fadeMs);
+      if (sceneId === "bali-sunrise-house") baliMorningSoundscape.stopSoundscape(fadeMs);
     },
-  }), [finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, sceneId, swissLakesSoundscape, tuscanyTownSoundscape]);
+  }), [baliMorningSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, sceneId, swissLakesSoundscape, tuscanyTownSoundscape]);
 
   return null;
 });

@@ -118,6 +118,17 @@ export const places: Place[] = [
     note: "A small rooftop, takeaway dinner, and the city turning gold.",
     currentMoment: "Rooftop Sunset",
   },
+  {
+    id: "bali",
+    name: "Bali Sunrise House",
+    mapLabel: "Bali",
+    country: "Ubud, Bali",
+    xPercent: 74.8,
+    yPercent: 55.5,
+    sceneIds: ["bali-sunrise-house"],
+    note: "The day begins before the heat, before anyone needs you.",
+    currentMoment: "Sunrise House",
+  },
   { id: "patagonia", name: "Patagonia", country: "Argentina", xPercent: 28.3, yPercent: 77.9, sceneIds: [], note: "", currentMoment: "" },
   { id: "new-zealand", name: "New Zealand", country: "New Zealand", xPercent: 88.7, yPercent: 83.4, sceneIds: [], note: "", currentMoment: "" },
 ];
