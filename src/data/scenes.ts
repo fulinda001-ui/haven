@@ -84,10 +84,8 @@ export const scenes: Scene[] = [
     location: "Hokkaido, Japan",
     timezone: "Asia/Tokyo",
     weatherLocation: "Hokkaido, JP",
-    coverImage:
-      "https://unsplash.com/photos/6kVGxIHriTA/download?force=true&w=1800",
-    backgroundImage:
-      "https://unsplash.com/photos/6kVGxIHriTA/download?force=true&w=1800",
+    coverImage: "/scenes/hokkaido-forest-cabin/images/hokkaido-forest-cabin.jpg",
+    backgroundImage: "/scenes/hokkaido-forest-cabin/images/hokkaido-forest-cabin.jpg",
     ambientAudio: "/scenes/hokkaido-cabin/audio/ambient.mp3",
     seasonalAudio: "/scenes/hokkaido-cabin/audio/dbsound-light-breeze-through-cabin-slats-327161.mp3",
     description: "A quiet summer evening among the trees.",
