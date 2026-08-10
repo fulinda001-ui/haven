@@ -177,7 +177,7 @@ function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }
   };
 
   return (
-    <article className={`scene-poster ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
+    <article className={`scene-poster ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
       <img src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} decoding="async" fetchPriority={scene.id === HOKKAIDO_SCENE_ID ? "high" : "auto"} />
       <div className="scene-poster-copy">
         <p>{scene.location}</p>
@@ -255,7 +255,9 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const isKyotoRainyCafe = scene.id === "kyoto-rainy-cafe";
   const isSwissLakes = scene.id === "swiss-lakeside-morning";
   const isBaliSunriseHouse = scene.id === BALI_SUNRISE_DESTINATION_ID;
-  const hasAmbientSoundscape = isHokkaidoCabin || isIcelandAuroraLodge || isFinlandGlassCabin || isNorwegianFjordHouse || isTuscanySummerVilla || isProvenceKitchen || isSeoulRooftopSunset || isKyotoRainyCafe || isSwissLakes || isBaliSunriseHouse;
+  const isNewZealandMountainCabin = scene.id === "new-zealand-mountain-cabin";
+  const isCaliforniaCoastalMorning = scene.id === "california-coastal-morning";
+  const hasAmbientSoundscape = isHokkaidoCabin || isIcelandAuroraLodge || isFinlandGlassCabin || isNorwegianFjordHouse || isTuscanySummerVilla || isProvenceKitchen || isSeoulRooftopSunset || isKyotoRainyCafe || isSwissLakes || isBaliSunriseHouse || isNewZealandMountainCabin || isCaliforniaCoastalMorning;
   const [entering, setEntering] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -308,7 +310,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       mediaSession.playbackState = "none";
       return;
     }
-    const moment = scene.id === "hokkaido-forest-cabin" ? "Forest Cabin" : scene.id === "kyoto-rainy-cafe" ? "Rainy Café" : scene.id === ICELAND_SCENE_ID ? "Black Beach Cabin" : scene.id === FINLAND_SCENE_ID ? "Glass Cabin" : scene.id === NORWEGIAN_FJORD_SCENE_ID ? "Fjord House" : scene.id === BALI_SUNRISE_DESTINATION_ID ? "Sunrise House" : "Lakeside Morning";
+    const moment = scene.id === "hokkaido-forest-cabin" ? "Forest Cabin" : scene.id === "kyoto-rainy-cafe" ? "Rainy Café" : scene.id === ICELAND_SCENE_ID ? "Black Beach Cabin" : scene.id === FINLAND_SCENE_ID ? "Glass Cabin" : scene.id === NORWEGIAN_FJORD_SCENE_ID ? "Fjord House" : scene.id === BALI_SUNRISE_DESTINATION_ID ? "Sunrise House" : scene.id === "new-zealand-mountain-cabin" ? "Mountain Cabin" : scene.id === "california-coastal-morning" ? "Coastal Morning" : "Lakeside Morning";
     try {
       mediaSession.metadata = new MediaMetadata({ title: `${scene.city} — ${moment}`, artist: "Haven", album: "Ambient Session", artwork: [{ src: scene.coverImage }] });
     } catch { /* Metadata is progressive enhancement. */ }
@@ -425,7 +427,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const hokkaidoHeroFailed = isHokkaidoCabin && failedHokkaidoImage === scene.backgroundImage;
 
   return (
-    <main ref={stageRef} className={`scene-stage ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
+    <main ref={stageRef} className={`scene-stage ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${isNewZealandMountainCabin ? "scene-stage--new-zealand-mountain-cabin" : ""} ${isCaliforniaCoastalMorning ? "scene-stage--california-coastal-morning" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
       <AmbientAudio ref={ambientAudioRef} sceneId={scene.id} />
       <div className="scene-viewport" aria-hidden="true"><div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}><div className="camera-enter-leave"><div className="camera-scale"><div className="camera-drift-x"><div className="camera-drift-y"><div className={`living-scene-image ${isHokkaidoCabin ? "hokkaido-hero-image" : ""} ${hokkaidoHeroReady ? "is-ready" : "is-pending"} ${hokkaidoHeroFailed ? "has-error" : ""}`} style={hokkaidoHeroReady ? { backgroundImage: `url(${scene.backgroundImage})` } : undefined} /></div></div></div></div></div></div>
       <div className="ambient-light ambient-light-warm" aria-hidden="true" /><div className="ambient-light ambient-light-cool" aria-hidden="true" /><div className="scene-grain" aria-hidden="true" />

@@ -134,7 +134,28 @@ export const places: Place[] = [
     currentMoment: "Sunrise House",
   },
   { id: "patagonia", name: "Patagonia", country: "Argentina", xPercent: 28.3, yPercent: 77.9, sceneIds: [], note: "", currentMoment: "" },
-  { id: "new-zealand", name: "New Zealand", country: "New Zealand", xPercent: 88.7, yPercent: 83.4, sceneIds: [], note: "", currentMoment: "" },
+  {
+    id: "new-zealand",
+    name: "New Zealand Mountain Cabin",
+    mapLabel: "New Zealand",
+    country: "South Island, New Zealand",
+    xPercent: 88.7,
+    yPercent: 83.4,
+    sceneIds: ["new-zealand-mountain-cabin"],
+    note: "Clean sheets, mountain air, and the feeling of starting over.",
+    currentMoment: "Mountain Cabin",
+  },
+  {
+    id: "california",
+    name: "California Coastal Morning",
+    mapLabel: "California",
+    country: "Big Sur, California",
+    xPercent: 15.1,
+    yPercent: 42.1,
+    sceneIds: ["california-coastal-morning"],
+    note: "Salt air, empty road, and an unmarked morning ahead.",
+    currentMoment: "Coastal Morning",
+  },
 ];
 
 const readStoredDiscoveries = (): PlaceDiscoveries => {

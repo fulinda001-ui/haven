@@ -89,7 +89,11 @@ img { display: block; max-width: 100%; }
 .scene-poster:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
 .scene-poster > img { width: 100%; height: 335px; object-fit: cover; transition: transform 600ms ease; }
 .scene-poster--finland > img { object-position: center 62%; }
+.scene-poster--new-zealand-mountain-cabin > img { object-fit: cover; object-position: 35% center; background: #302c27; }
+.scene-poster--california-coastal-morning > img { object-fit:cover; object-position:50% 58%; background:#76644f; }
 .scene-poster:hover > img { transform: scale(1.02); }
+.scene-poster--new-zealand-mountain-cabin:hover > img { transform: none; }
+.scene-poster--california-coastal-morning:hover > img { transform:none; }
 .scene-poster-copy { padding: 22px 22px 25px; display: grid; align-content: start; gap: 10px; }
 .scene-poster-copy p { margin: 0; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .scene-poster-copy h2 { margin: 0; font: 500 29px/1.06 "Playfair Display", serif; letter-spacing: -.04em; }
@@ -209,6 +213,22 @@ img { display: block; max-width: 100%; }
 .scene-stage--seoul-rooftop-sunset .camera-enter-leave { transform:none !important; transition:none; }
 .scene-stage--seoul-rooftop-sunset .ambient-light,
 .scene-stage--seoul-rooftop-sunset .scene-grain { display:none; }
+/* New Zealand Mountain Cabin preserves the approved photograph in full, without motion or overlays. */
+.scene-stage--new-zealand-mountain-cabin .camera-scale,
+.scene-stage--new-zealand-mountain-cabin .camera-drift-x,
+.scene-stage--new-zealand-mountain-cabin .camera-drift-y { animation:none; }
+.scene-stage--new-zealand-mountain-cabin .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--new-zealand-mountain-cabin .living-scene-image { animation:none; transform:none; background-size:cover; background-position:35% center; background-color:#302c27; }
+.scene-stage--new-zealand-mountain-cabin .ambient-light,
+.scene-stage--new-zealand-mountain-cabin .scene-grain { display:none; }
+/* California Coastal Morning is an intentionally still, unprocessed photograph. */
+.scene-stage--california-coastal-morning .camera-scale,
+.scene-stage--california-coastal-morning .camera-drift-x,
+.scene-stage--california-coastal-morning .camera-drift-y { animation:none; }
+.scene-stage--california-coastal-morning .camera-enter-leave { transform:none !important; transition:none; }
+.scene-stage--california-coastal-morning .living-scene-image { animation:none; transform:none; background-size:cover; background-position:50% 58%; background-color:#76644f; }
+.scene-stage--california-coastal-morning .ambient-light,
+.scene-stage--california-coastal-morning .scene-grain { display:none; }
 
 /* Bali Sunrise House: light through early mist, with only the smallest movement
    in the bamboo canopy. The scene itself remains the photograph. */

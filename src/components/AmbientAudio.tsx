@@ -74,12 +74,22 @@ const FINLAND_WIND_AUDIO = "/scenes/finland-glass-cabin/audio/outside-wind.mp3";
 const FINLAND_WIND_BASE_VOLUME = 0.03;
 const NORWEGIAN_FJORD_WATER_AUDIO = "/scenes/norwegian-fjord-house/audio/fjord-water.mp3";
 const NORWEGIAN_FJORD_WATER_BASE_VOLUME = 0.16;
+const NEW_ZEALAND_HOT_SPRING_AUDIO = "/scenes/new-zealand-mountain-cabin/audio/hot-spring-water.mp3";
+const NEW_ZEALAND_HOT_SPRING_BASE_VOLUME = 0.14;
+const NEW_ZEALAND_HOT_SPRING_DURATION_SECONDS = 60.456;
+const NEW_ZEALAND_HOT_SPRING_CROSSFADE_SECONDS = 8;
+const CALIFORNIA_COASTAL_WAVES_AUDIO = "/scenes/california-coastal-morning/audio/coastal-waves.wav";
+const CALIFORNIA_COASTAL_WAVES_BASE_VOLUME = 0.11;
+const CALIFORNIA_COASTAL_WAVES_DURATION_SECONDS = 169.5;
+const CALIFORNIA_COASTAL_WAVES_CROSSFADE_SECONDS = 10;
 const BALI_MORNING_AUDIO = "/scenes/bali-sunrise-house/audio/morning-garden.mp3";
 const BALI_MORNING_BASE_VOLUME = 0.16;
 const BALI_TEMPLE_BELL_AUDIO = "/scenes/bali-sunrise-house/audio/temple-bell-single.m4a";
-// Kept intentionally prominent only while verifying production playback.
-const BALI_TEMPLE_BELL_VOLUME = 0.25;
+// About 10 dB below the previously approved verification level, so the bell
+// sits well behind the morning garden rather than defining the soundscape.
+const BALI_TEMPLE_BELL_VOLUME = 0.08;
 const BALI_TEMPLE_BELL_FIRST_DELAY_MS = 2500;
+const BALI_TEMPLE_BELL_REPEAT_INTERVAL = { minimum: 10 * 60 * 1000, maximum: 15 * 60 * 1000 } as const;
 
 const randomBetween = (minimum: number, maximum: number) => minimum + Math.random() * (maximum - minimum);
 
@@ -1896,6 +1906,188 @@ class NorwegianFjordSoundscape {
   }
 }
 
+class CrossfadeAmbientSoundscape {
+  private players: [HTMLAudioElement, HTMLAudioElement] | null = null;
+  private activeIndex = 0;
+  private fadeFrames = new Map<HTMLAudioElement, number>();
+  private crossfadeFrame: number | null = null;
+  private loopTimer: number | null = null;
+  private running = false;
+
+  constructor(
+    private readonly source: string,
+    private readonly baseVolume: number,
+    private readonly durationSeconds: number,
+    private readonly crossfadeSeconds: number,
+    private readonly fadeInMs = 2000,
+  ) {}
+
+  private createPlayer() {
+    const audio = new Audio(this.source);
+    audio.preload = "auto";
+    audio.loop = false;
+    audio.muted = false;
+    audio.volume = 0;
+    audio.setAttribute("aria-hidden", "true");
+    audio.style.display = "none";
+    document.body.append(audio);
+    audio.load();
+    return audio;
+  }
+
+  private ensure() {
+    if (!this.players) this.players = [this.createPlayer(), this.createPlayer()];
+    return this.players;
+  }
+
+  getAmbientAudio() {
+    return this.ensure()[this.activeIndex];
+  }
+
+  private clearLoopTimer() {
+    if (this.loopTimer !== null) window.clearTimeout(this.loopTimer);
+    this.loopTimer = null;
+  }
+
+  private cancelFade(audio: HTMLAudioElement) {
+    const frame = this.fadeFrames.get(audio);
+    if (frame !== undefined) cancelAnimationFrame(frame);
+    this.fadeFrames.delete(audio);
+  }
+
+  private cancelFades() {
+    this.fadeFrames.forEach((frame) => cancelAnimationFrame(frame));
+    this.fadeFrames.clear();
+    if (this.crossfadeFrame !== null) cancelAnimationFrame(this.crossfadeFrame);
+    this.crossfadeFrame = null;
+  }
+
+  private fade(audio: HTMLAudioElement, target: number, duration: number, done?: () => void) {
+    this.cancelFade(audio);
+    const from = audio.volume;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - began) / duration);
+      const eased = progress * progress * (3 - 2 * progress);
+      audio.volume = from + (target - from) * eased;
+      if (progress < 1) this.fadeFrames.set(audio, requestAnimationFrame(tick));
+      else { this.fadeFrames.delete(audio); done?.(); }
+    };
+    this.fadeFrames.set(audio, requestAnimationFrame(tick));
+  }
+
+  private scheduleCrossfade() {
+    this.clearLoopTimer();
+    if (!this.running) return;
+    const active = this.getAmbientAudio();
+    const duration = Number.isFinite(active.duration) && active.duration > this.crossfadeSeconds
+      ? active.duration
+      : this.durationSeconds;
+    const delay = Math.max(0, (duration - active.currentTime - this.crossfadeSeconds) * 1000);
+    this.loopTimer = window.setTimeout(() => {
+      this.loopTimer = null;
+      this.crossfadeToNext();
+    }, delay);
+  }
+
+  private crossfadeToNext() {
+    if (!this.running) return;
+    const [first, second] = this.ensure();
+    const outgoing = this.activeIndex === 0 ? first : second;
+    const incoming = this.activeIndex === 0 ? second : first;
+    if (!outgoing.paused && !incoming.paused) return;
+
+    this.cancelFade(outgoing);
+    this.cancelFade(incoming);
+    if (this.crossfadeFrame !== null) cancelAnimationFrame(this.crossfadeFrame);
+    this.crossfadeFrame = null;
+    incoming.pause();
+    incoming.currentTime = 0;
+    incoming.volume = 0;
+    incoming.loop = false;
+    incoming.muted = false;
+    void incoming.play().then(() => {
+      if (!this.running) { incoming.pause(); return; }
+      const began = performance.now();
+      const durationMs = this.crossfadeSeconds * 1000;
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - began) / durationMs);
+        // Equal-power curves keep the ambient water bed steady through the overlap.
+        outgoing.volume = Math.max(0, Math.min(1, this.baseVolume * Math.cos(progress * Math.PI * 0.5)));
+        incoming.volume = Math.max(0, Math.min(1, this.baseVolume * Math.sin(progress * Math.PI * 0.5)));
+        if (progress < 1) this.crossfadeFrame = requestAnimationFrame(tick);
+        else {
+          this.crossfadeFrame = null;
+          outgoing.pause();
+          outgoing.currentTime = 0;
+          outgoing.volume = 0;
+          this.activeIndex = this.activeIndex === 0 ? 1 : 0;
+          this.scheduleCrossfade();
+        }
+      };
+      this.crossfadeFrame = requestAnimationFrame(tick);
+    }).catch(() => {
+      if (this.running) this.scheduleCrossfade();
+    });
+  }
+
+  /** The first water player begins in the real Enter click in SceneStage. */
+  startSoundscape() {
+    if (this.running) return;
+    const active = this.getAmbientAudio();
+    this.running = true;
+    active.loop = false;
+    active.muted = false;
+    this.fade(active, this.baseVolume, this.fadeInMs);
+    this.scheduleCrossfade();
+  }
+
+  pauseSoundscape() {
+    this.running = false;
+    this.clearLoopTimer();
+    this.cancelFades();
+    this.players?.forEach((audio) => this.fade(audio, 0, 700, () => audio.pause()));
+  }
+
+  resumeSoundscape() {
+    if (this.running) return;
+    const active = this.getAmbientAudio();
+    this.running = true;
+    active.loop = false;
+    active.muted = false;
+    void active.play().then(() => {
+      this.fade(active, this.baseVolume, 850);
+      this.scheduleCrossfade();
+    }).catch(() => { this.running = false; });
+  }
+
+  stopSoundscape(fadeMs = 2000) {
+    this.running = false;
+    this.clearLoopTimer();
+    this.cancelFades();
+    this.players?.forEach((audio) => this.fade(audio, 0, fadeMs, () => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = 0;
+    }));
+    this.activeIndex = 0;
+  }
+
+  destroy() {
+    this.running = false;
+    this.clearLoopTimer();
+    this.cancelFades();
+    this.players?.forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = 0;
+      audio.remove();
+    });
+    this.players = null;
+    this.activeIndex = 0;
+  }
+}
+
 class SwissLakesSoundscape {
   private player: HTMLAudioElement | null = null;
   private waterPlayer: HTMLAudioElement | null = null;
@@ -2033,6 +2225,7 @@ type OccasionalAudioEvent = {
   source: string;
   volume: number;
   firstDelayMs: number;
+  repeatInterval?: { minimum: number; maximum: number };
   resonanceMs?: number;
   exitFadeMs?: number;
 };
@@ -2086,6 +2279,7 @@ class SingleAmbientSoundscape {
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
       audio.onerror = () => console.error("Bali temple bell audio failed to load:", audio.error);
+      audio.onended = () => this.scheduleNextEvent();
       document.body.append(audio);
       audio.load();
       this.eventPlayer = audio;
@@ -2144,6 +2338,23 @@ class SingleAmbientSoundscape {
   private clearEventReleaseTimer() {
     if (this.eventReleaseTimer !== null) window.clearTimeout(this.eventReleaseTimer);
     this.eventReleaseTimer = null;
+  }
+
+  private scheduleNextEvent() {
+    const interval = this.occasionalEvent?.repeatInterval;
+    if (!interval || !this.running || !this.eventArmed || !this.eventPlayed) return;
+    this.clearEventTimer();
+    const delay = randomBetween(interval.minimum, interval.maximum);
+    this.eventTimer = window.setTimeout(() => {
+      this.eventTimer = null;
+      const audio = this.eventPlayer;
+      if (!audio || !this.running || !this.eventArmed || !audio.paused) return;
+      audio.currentTime = 0;
+      this.applyEventDecay();
+      void audio.play().catch((error: unknown) => {
+        console.error("Bali temple bell repeat playback failed:", error);
+      });
+    }, delay);
   }
 
   private applyEventDecay() {
@@ -2215,6 +2426,7 @@ class SingleAmbientSoundscape {
       this.eventPlayer.pause();
       this.eventPlayer.currentTime = 0;
       this.eventPlayer.onerror = null;
+      this.eventPlayer.onended = null;
       this.eventPlayer.remove();
       this.eventPlayer = null;
     }
@@ -2319,6 +2531,8 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   const norwegianFjordSoundscapeRef = useRef<NorwegianFjordSoundscape | null>(null);
   const swissLakesSoundscapeRef = useRef<SwissLakesSoundscape | null>(null);
   const baliMorningSoundscapeRef = useRef<SingleAmbientSoundscape | null>(null);
+  const newZealandHotSpringSoundscapeRef = useRef<CrossfadeAmbientSoundscape | null>(null);
+  const californiaCoastalWavesSoundscapeRef = useRef<CrossfadeAmbientSoundscape | null>(null);
   if (!hokkaidoSoundscapeRef.current) hokkaidoSoundscapeRef.current = new HokkaidoSoundscape();
   if (!kyotoSoundscapeRef.current) kyotoSoundscapeRef.current = new KyotoRainSoundscape();
   if (!icelandAuroraSoundscapeRef.current) icelandAuroraSoundscapeRef.current = new IcelandAuroraSoundscape();
@@ -2332,9 +2546,22 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
     source: BALI_TEMPLE_BELL_AUDIO,
     volume: BALI_TEMPLE_BELL_VOLUME,
     firstDelayMs: BALI_TEMPLE_BELL_FIRST_DELAY_MS,
+    repeatInterval: BALI_TEMPLE_BELL_REPEAT_INTERVAL,
     resonanceMs: 13_500,
     exitFadeMs: 1800,
   });
+  if (!newZealandHotSpringSoundscapeRef.current) newZealandHotSpringSoundscapeRef.current = new CrossfadeAmbientSoundscape(
+    NEW_ZEALAND_HOT_SPRING_AUDIO,
+    NEW_ZEALAND_HOT_SPRING_BASE_VOLUME,
+    NEW_ZEALAND_HOT_SPRING_DURATION_SECONDS,
+    NEW_ZEALAND_HOT_SPRING_CROSSFADE_SECONDS,
+  );
+  if (!californiaCoastalWavesSoundscapeRef.current) californiaCoastalWavesSoundscapeRef.current = new CrossfadeAmbientSoundscape(
+    CALIFORNIA_COASTAL_WAVES_AUDIO,
+    CALIFORNIA_COASTAL_WAVES_BASE_VOLUME,
+    CALIFORNIA_COASTAL_WAVES_DURATION_SECONDS,
+    CALIFORNIA_COASTAL_WAVES_CROSSFADE_SECONDS,
+  );
   const hokkaidoSoundscape = hokkaidoSoundscapeRef.current;
   const kyotoSoundscape = kyotoSoundscapeRef.current;
   const icelandAuroraSoundscape = icelandAuroraSoundscapeRef.current;
@@ -2345,8 +2572,10 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
   const norwegianFjordSoundscape = norwegianFjordSoundscapeRef.current;
   const swissLakesSoundscape = swissLakesSoundscapeRef.current;
   const baliMorningSoundscape = baliMorningSoundscapeRef.current;
+  const newZealandHotSpringSoundscape = newZealandHotSpringSoundscapeRef.current;
+  const californiaCoastalWavesSoundscape = californiaCoastalWavesSoundscapeRef.current;
 
-  useEffect(() => () => { hokkaidoSoundscape.destroy(); kyotoSoundscape.destroy(); icelandAuroraSoundscape.destroy(); provenceGardenSoundscape.destroy(); tuscanyTownSoundscape.destroy(); seoulCitySoundscape.destroy(); finlandFireplaceSoundscape.destroy(); norwegianFjordSoundscape.destroy(); swissLakesSoundscape.destroy(); baliMorningSoundscape.destroy(); }, [baliMorningSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, seoulCitySoundscape, swissLakesSoundscape, tuscanyTownSoundscape]);
+  useEffect(() => () => { hokkaidoSoundscape.destroy(); kyotoSoundscape.destroy(); icelandAuroraSoundscape.destroy(); provenceGardenSoundscape.destroy(); tuscanyTownSoundscape.destroy(); seoulCitySoundscape.destroy(); finlandFireplaceSoundscape.destroy(); norwegianFjordSoundscape.destroy(); swissLakesSoundscape.destroy(); baliMorningSoundscape.destroy(); newZealandHotSpringSoundscape.destroy(); californiaCoastalWavesSoundscape.destroy(); }, [baliMorningSoundscape, californiaCoastalWavesSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, newZealandHotSpringSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, seoulCitySoundscape, swissLakesSoundscape, tuscanyTownSoundscape]);
 
   useImperativeHandle(ref, () => ({
     getAmbientAudio: () => {
@@ -2360,6 +2589,8 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "norwegian-fjord-house") return norwegianFjordSoundscape.getAmbientAudio();
       if (sceneId === "swiss-lakeside-morning") return swissLakesSoundscape.getAmbientAudio();
       if (sceneId === "bali-sunrise-house") return baliMorningSoundscape.getAmbientAudio();
+      if (sceneId === "new-zealand-mountain-cabin") return newZealandHotSpringSoundscape.getAmbientAudio();
+      if (sceneId === "california-coastal-morning") return californiaCoastalWavesSoundscape.getAmbientAudio();
       return null;
     },
     primeBaliTempleBell: () => {
@@ -2376,6 +2607,8 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.startSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.startSoundscape();
       if (sceneId === "bali-sunrise-house") baliMorningSoundscape.startSoundscape();
+      if (sceneId === "new-zealand-mountain-cabin") newZealandHotSpringSoundscape.startSoundscape();
+      if (sceneId === "california-coastal-morning") californiaCoastalWavesSoundscape.startSoundscape();
     },
     pauseSoundscape: () => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.pauseSoundscape();
@@ -2388,6 +2621,8 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.pauseSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.pauseSoundscape();
       if (sceneId === "bali-sunrise-house") baliMorningSoundscape.pauseSoundscape();
+      if (sceneId === "new-zealand-mountain-cabin") newZealandHotSpringSoundscape.pauseSoundscape();
+      if (sceneId === "california-coastal-morning") californiaCoastalWavesSoundscape.pauseSoundscape();
     },
     resumeSoundscape: () => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.resumeSoundscape();
@@ -2400,6 +2635,8 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.resumeSoundscape();
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.resumeSoundscape();
       if (sceneId === "bali-sunrise-house") baliMorningSoundscape.resumeSoundscape();
+      if (sceneId === "new-zealand-mountain-cabin") newZealandHotSpringSoundscape.resumeSoundscape();
+      if (sceneId === "california-coastal-morning") californiaCoastalWavesSoundscape.resumeSoundscape();
     },
     stopSoundscape: (fadeMs?: number) => {
       if (sceneId === "hokkaido-forest-cabin") hokkaidoSoundscape.stopSoundscape(fadeMs);
@@ -2412,8 +2649,10 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
       if (sceneId === "norwegian-fjord-house") norwegianFjordSoundscape.stopSoundscape(fadeMs);
       if (sceneId === "swiss-lakeside-morning") swissLakesSoundscape.stopSoundscape(fadeMs);
       if (sceneId === "bali-sunrise-house") baliMorningSoundscape.stopSoundscape(fadeMs);
+      if (sceneId === "new-zealand-mountain-cabin") newZealandHotSpringSoundscape.stopSoundscape(fadeMs);
+      if (sceneId === "california-coastal-morning") californiaCoastalWavesSoundscape.stopSoundscape(fadeMs);
     },
-  }), [baliMorningSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, sceneId, swissLakesSoundscape, tuscanyTownSoundscape]);
+  }), [baliMorningSoundscape, californiaCoastalWavesSoundscape, finlandFireplaceSoundscape, hokkaidoSoundscape, icelandAuroraSoundscape, kyotoSoundscape, newZealandHotSpringSoundscape, norwegianFjordSoundscape, provenceGardenSoundscape, sceneId, swissLakesSoundscape, tuscanyTownSoundscape]);
 
   return null;
 });
