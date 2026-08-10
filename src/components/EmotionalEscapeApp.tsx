@@ -36,6 +36,7 @@ const SCENE_CARD_DIMENSIONS: Record<string, { width: number; height: number }> =
   "new-zealand-mountain-cabin": { width: 1659, height: 948 },
   "california-coastal-morning": { width: 1122, height: 1402 },
 };
+const HOKKAIDO_CARD_BLUR_DATA_URL = "data:image/jpeg;base64,/9j/2wBDABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z////////////////2wBDARsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z////////////////wgARCAAkABgDASIAAhEBAxEB/8QAGAABAAMBAAAAAAAAAAAAAAAAAAMEBQH/xAAXAQEBAQEAAAAAAAAAAAAAAAAAAQID/9oADAMBAAIQAxAAAAChq5WrxQIWkHati2EWVulAf//EACMQAAIBAwMEAwAAAAAAAAAAAAECAAMRIQQSMhMgMUEiUYH/2gAIAQEAAT8AQUyoJOZpQLW23msbaDiwM2ZVfM05CfA5P1NWd7ELFrjlbxOsowLZ9kmGvUKlScRGQep16VuEbYx4H8PZ/8QAGBEAAgMAAAAAAAAAAAAAAAAAABEBIEH/2gAIAQIBAT8A0gSp/8QAFBEBAAAAAAAAAAAAAAAAAAAAIP/aAAgBAwEBPwBf/9k=";
 
 const recommendationHeading = (count: number) => {
   const words = ["", "A", "Two", "Three", "Four"];
@@ -215,6 +216,31 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
   );
 }
 
+function HokkaidoCardImage({ scene, dimensions }: { scene: Scene; dimensions: { width: number; height: number } }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div
+      className={`hokkaido-card-image-frame ${loaded ? "is-loaded" : ""}`}
+      style={{ "--hokkaido-card-preview": `url("${HOKKAIDO_CARD_BLUR_DATA_URL}")` } as KyotoStyle}
+    >
+      <NextImage
+        src={scene.coverImage}
+        alt={`${scene.name}, ${scene.location}`}
+        width={dimensions.width}
+        height={dimensions.height}
+        sizes={SCENE_CARD_SIZES}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="high"
+        placeholder="blur"
+        blurDataURL={HOKKAIDO_CARD_BLUR_DATA_URL}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
 function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }) {
   const dimensions = SCENE_CARD_DIMENSIONS[scene.id] ?? DEFAULT_SCENE_CARD_DIMENSIONS;
   const prepareOnIntent = () => {
@@ -229,8 +255,8 @@ function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }
   };
 
   return (
-    <article className={`scene-poster ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={prepareOnIntent} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
-      <NextImage src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} width={dimensions.width} height={dimensions.height} sizes={SCENE_CARD_SIZES} loading="lazy" decoding="async" fetchPriority={scene.id === HOKKAIDO_SCENE_ID ? "high" : "auto"} />
+    <article className={`scene-poster ${scene.id === HOKKAIDO_SCENE_ID ? "scene-poster--hokkaido" : ""} ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={prepareOnIntent} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
+      {scene.id === HOKKAIDO_SCENE_ID ? <HokkaidoCardImage scene={scene} dimensions={dimensions} /> : <NextImage src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} width={dimensions.width} height={dimensions.height} sizes={SCENE_CARD_SIZES} loading="lazy" decoding="async" fetchPriority="auto" />}
       <div className="scene-poster-copy">
         <p>{scene.location}</p>
         <h2>{scene.name}</h2>
