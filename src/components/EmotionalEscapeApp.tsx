@@ -1,11 +1,12 @@
 "use client";
 
+import NextImage, { getImageProps } from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { moods, moodById, sceneById, scenesForMood, type Mood, type Scene } from "@/data/scenes";
 import { BALI_SUNRISE_DESTINATION_ID, markScenePlaceDiscovered } from "@/data/destinations";
 import { migrateHavenStorage } from "@/data/havenStorage";
 import { formatSessionTime, useHavenSession, type ActiveSession } from "@/hooks/useHavenSession";
-import { AmbientAudio, type AmbientAudioHandle } from "./AmbientAudio";
+import { AmbientAudio, preparePrimaryAmbientAudio, releasePreparedPrimaryAmbientAudio, type AmbientAudioHandle } from "./AmbientAudio";
 import { DeveloperTools } from "./DeveloperTools";
 import { YourWorldPage } from "./YourWorldPage";
 
@@ -16,7 +17,25 @@ const ICELAND_SCENE_ID = "iceland-aurora-lodge";
 const FINLAND_SCENE_ID = "finland-glass-cabin";
 const NORWEGIAN_FJORD_SCENE_ID = "norwegian-fjord-house";
 type ImagePreparation = "ready" | "failed";
-const hokkaidoImagePreparations = new Map<string, Promise<ImagePreparation>>();
+const sceneImagePreparations = new Map<string, Promise<ImagePreparation>>();
+const sceneCardImagePreparations = new Map<string, Promise<ImagePreparation>>();
+const MOOD_CARD_SIZES = "(max-width: 900px) 50vw, 330px";
+const SCENE_CARD_SIZES = "(max-width: 900px) calc(100vw - 32px), 420px";
+const DEFAULT_SCENE_CARD_DIMENSIONS = { width: 1536, height: 1024 };
+const SCENE_CARD_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  "hokkaido-forest-cabin": { width: 1800, height: 2700 },
+  "kyoto-rainy-cafe": { width: 1672, height: 941 },
+  "swiss-lakeside-morning": { width: 1536, height: 1024 },
+  "iceland-aurora-lodge": { width: 1536, height: 1024 },
+  "finland-glass-cabin": { width: 1536, height: 1024 },
+  "norwegian-fjord-house": { width: 1402, height: 1122 },
+  "tuscany-summer-villa": { width: 1401, height: 1123 },
+  "provence-kitchen": { width: 1536, height: 1024 },
+  "seoul-rooftop-sunset": { width: 1086, height: 1448 },
+  "bali-sunrise-house": { width: 1536, height: 1024 },
+  "new-zealand-mountain-cabin": { width: 1659, height: 948 },
+  "california-coastal-morning": { width: 1122, height: 1402 },
+};
 
 const recommendationHeading = (count: number) => {
   const words = ["", "A", "Two", "Three", "Four"];
@@ -24,12 +43,12 @@ const recommendationHeading = (count: number) => {
 };
 
 /**
- * Prepares the exact URL used by both the Hokkaido poster and scene background.
+ * Prepares the exact URL used by a Place poster and scene background.
  * Keeping this promise at module scope prevents duplicate network/decode work as
- * people move between Explore, the introduction, and the living scene.
+ * people move from a Mood collection into the living scene.
  */
-function prepareHokkaidoHero(source: string) {
-  const existing = hokkaidoImagePreparations.get(source);
+function prepareSceneHero(source: string) {
+  const existing = sceneImagePreparations.get(source);
   if (existing) return existing;
 
   const preparation = new Promise<ImagePreparation>((resolve) => {
@@ -47,13 +66,39 @@ function prepareHokkaidoHero(source: string) {
     };
     image.addEventListener("load", () => { void finishLoaded(); }, { once: true });
     image.addEventListener("error", () => {
-      if (process.env.NODE_ENV === "development") console.warn("Haven: Hokkaido hero image could not be loaded.", source);
+      if (process.env.NODE_ENV === "development") console.warn("Haven: scene hero image could not be loaded.", source);
       resolve("failed");
     }, { once: true });
     image.src = source;
     if (image.complete && image.naturalWidth > 0) void finishLoaded();
   });
-  hokkaidoImagePreparations.set(source, preparation);
+  sceneImagePreparations.set(source, preparation);
+  return preparation;
+}
+
+function prepareSceneCard(scene: Scene) {
+  const existing = sceneCardImagePreparations.get(scene.coverImage);
+  if (existing) return existing;
+
+  const dimensions = SCENE_CARD_DIMENSIONS[scene.id] ?? DEFAULT_SCENE_CARD_DIMENSIONS;
+  const { props } = getImageProps({
+    src: scene.coverImage,
+    alt: "",
+    width: dimensions.width,
+    height: dimensions.height,
+    sizes: SCENE_CARD_SIZES,
+  });
+  const preparation = new Promise<ImagePreparation>((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.addEventListener("load", () => resolve("ready"), { once: true });
+    image.addEventListener("error", () => resolve("failed"), { once: true });
+    if (props.srcSet) image.srcset = props.srcSet;
+    if (props.sizes) image.sizes = props.sizes;
+    image.src = props.src;
+    if (image.complete && image.naturalWidth > 0) resolve("ready");
+  });
+  sceneCardImagePreparations.set(scene.coverImage, preparation);
   return preparation;
 }
 
@@ -151,9 +196,14 @@ function BaliMorningLayer() {
 }
 
 function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
+  const prepareOnIntent = () => {
+    const firstScene = scenesForMood(mood.id)[0];
+    if (firstScene) void prepareSceneCard(firstScene);
+  };
+
   return (
-    <button className="mood-poster" onClick={onChoose}>
-      <img src={mood.coverImage} alt="" />
+    <button className="mood-poster" onClick={onChoose} onPointerEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent}>
+      <NextImage src={mood.coverImage} alt="" width={1800} height={1200} sizes={MOOD_CARD_SIZES} preload={mood.id === "quiet"} />
       <span className="poster-shade" aria-hidden="true" />
       <span className="poster-copy">
         <small>{mood.name}</small>
@@ -166,8 +216,10 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
 }
 
 function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }) {
+  const dimensions = SCENE_CARD_DIMENSIONS[scene.id] ?? DEFAULT_SCENE_CARD_DIMENSIONS;
   const prepareOnIntent = () => {
-    if (scene.id === HOKKAIDO_SCENE_ID) void prepareHokkaidoHero(scene.backgroundImage);
+    preparePrimaryAmbientAudio(scene.id);
+    if (scene.id === HOKKAIDO_SCENE_ID) void prepareSceneHero(scene.backgroundImage);
   };
   const chooseWithKeyboard = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -177,8 +229,8 @@ function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }
   };
 
   return (
-    <article className={`scene-poster ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
-      <img src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} decoding="async" fetchPriority={scene.id === HOKKAIDO_SCENE_ID ? "high" : "auto"} />
+    <article className={`scene-poster ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={prepareOnIntent} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
+      <NextImage src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} width={dimensions.width} height={dimensions.height} sizes={SCENE_CARD_SIZES} loading="lazy" decoding="async" fetchPriority={scene.id === HOKKAIDO_SCENE_ID ? "high" : "auto"} />
       <div className="scene-poster-copy">
         <p>{scene.location}</p>
         <h2>{scene.name}</h2>
@@ -285,7 +337,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   useEffect(() => {
     if (!isHokkaidoCabin) return;
     let current = true;
-    void prepareHokkaidoHero(scene.backgroundImage).then((result) => {
+    void prepareSceneHero(scene.backgroundImage).then((result) => {
       if (!current) return;
       if (result === "ready") setPreparedHokkaidoImage(scene.backgroundImage);
       else setFailedHokkaidoImage(scene.backgroundImage);
@@ -435,7 +487,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       {isKyotoRainyCafe && mode === "active" && <KyotoLivingLayer />}
       {isSwissLakes && mode === "active" && <SwissMistLayer />}
       {isBaliSunriseHouse && mode === "active" && <BaliMorningLayer />}
-      <section className="scene-introduction-copy"><p>{scene.location}</p><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter}>Enter {scene.city} <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
+      <section className="scene-introduction-copy"><p>{scene.location}</p><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id)} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id)} onFocus={() => preparePrimaryAmbientAudio(scene.id)} onPointerDown={() => preparePrimaryAmbientAudio(scene.id)} onTouchStart={() => preparePrimaryAmbientAudio(scene.id)}>Enter {scene.city} <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
       <button className="quiet-back" onClick={onBack}>← Back</button><p className="introduction-note">Nothing is required when you arrive.</p>
       <section className="scene-presence"><p>{scene.location}</p><span>{scene.description}</span><small>{scene.time} · {scene.weather}</small></section>
       <div className={`scene-controls ${controlsVisible ? "visible" : ""}`}><button aria-label={soundOn ? "Turn ambient sound off" : "Turn ambient sound on"} aria-pressed={soundOn} onClick={toggleSound}>{soundOn ? "Sound on" : "Sound off"}</button><SessionTimerControl session={activeSession} remainingMs={remainingMs} completed={completed} announcement={announcement} start={start} pause={pause} resume={resume} addTenMinutes={addTenMinutes} end={end} continueWithoutTimer={continueWithoutTimer} clearCompletion={clearCompletion} onLeave={leave} /><button aria-label="Toggle fullscreen" onClick={toggleFullscreen}>Fullscreen</button><button aria-label={`Leave ${scene.name}`} onClick={leave}>Leave</button></div>
@@ -447,6 +499,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
 export function EmotionalEscapeApp() {
   const [path, setPath] = useState("/");
   const [storageReady, setStorageReady] = useState(false);
+  const previousPathRef = useRef("/");
 
   useEffect(() => {
     migrateHavenStorage();
@@ -461,9 +514,12 @@ export function EmotionalEscapeApp() {
   }, []);
 
   useEffect(() => {
-    const hokkaido = sceneById(HOKKAIDO_SCENE_ID);
-    if (hokkaido) void prepareHokkaidoHero(hokkaido.backgroundImage);
-  }, []);
+    const previousSceneId = previousPathRef.current.match(/^\/scene\/([^/]+)/)?.[1];
+    const currentSceneId = path.match(/^\/scene\/([^/]+)/)?.[1];
+    if (path === "/" || path === "/your-world") releasePreparedPrimaryAmbientAudio();
+    else if (previousSceneId && previousSceneId !== currentSceneId) releasePreparedPrimaryAmbientAudio(previousSceneId);
+    previousPathRef.current = path;
+  }, [path]);
 
   useEffect(() => {
     if (path !== "/feelings/stillness") return;

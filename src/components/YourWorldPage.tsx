@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import { useEffect, useState } from "react";
 import { PLACE_DISCOVERIES_CHANGED_EVENT, places, readPlaceDiscoveries, type Place, type PlaceDiscoveries } from "@/data/destinations";
 
@@ -82,7 +83,7 @@ export function YourWorldPage({ onExplore }: { onExplore: () => void }) {
       <section className="world-atlas" aria-label="A quiet atlas of discovered Haven places">
         <div className="world-map-wrap">
           <div className="world-map">
-            <img src="/images/your_world_map_cream.png" alt="A cream-colored world map" />
+            <NextImage src="/images/your_world_map_cream.png" alt="A cream-colored world map" width={1536} height={1024} sizes="(max-width: 780px) calc(100vw - 44px), (min-width: 1540px) 1020px, 70vw" />
             <div className="world-markers">
               {places.map((place) => (
                 <DestinationMarker

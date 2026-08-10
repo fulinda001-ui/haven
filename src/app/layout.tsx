@@ -33,5 +33,5 @@ export const metadata: Metadata = {
   },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-CN"><head><link rel="preload" as="image" href="https://unsplash.com/photos/6kVGxIHriTA/download?force=true&w=1800" fetchPriority="high" /><link rel="preload" as="image" href="/scenes/iceland-aurora-lodge/images/iceland-black-beach-cabin.png" fetchPriority="high" /><link rel="preload" as="image" href="/scenes/finland-glass-cabin/images/finland-glass-cabin.png" /><link rel="preload" as="image" href="/scenes/norwegian-fjord-house/images/norwegian-fjord-house.png" /></head><body>{children}</body></html>;
+  return <html lang="zh-CN"><body>{children}</body></html>;
 }

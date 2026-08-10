@@ -15,6 +15,12 @@ export type AmbientAudioHandle = {
   stopSoundscape: (fadeMs?: number) => void;
 };
 
+type PreparedPrimaryAudio = {
+  sceneId: string;
+  source: string;
+  audio: HTMLAudioElement;
+};
+
 const AUDIO = {
   base: "/scenes/hokkaido-cabin/audio/ambient.mp3",
   birds: "/scenes/hokkaido-cabin/audio/mixkit-forest-birds-ambience-1210.wav",
@@ -91,6 +97,97 @@ const BALI_TEMPLE_BELL_VOLUME = 0.08;
 const BALI_TEMPLE_BELL_FIRST_DELAY_MS = 2500;
 const BALI_TEMPLE_BELL_REPEAT_INTERVAL = { minimum: 10 * 60 * 1000, maximum: 15 * 60 * 1000 } as const;
 
+const PRIMARY_AUDIO_BY_SCENE_ID: Record<string, string> = {
+  "hokkaido-forest-cabin": AUDIO.base,
+  "kyoto-rainy-cafe": KYOTO_RAIN_AUDIO,
+  "swiss-lakeside-morning": SWISS_LAKES_AMBIENCE,
+  "iceland-aurora-lodge": ICELAND_OCEAN_AUDIO,
+  "finland-glass-cabin": FINLAND_FIREPLACE_AUDIO,
+  "norwegian-fjord-house": NORWEGIAN_FJORD_WATER_AUDIO,
+  "tuscany-summer-villa": TUSCANY_TOWN_AUDIO,
+  "provence-kitchen": PROVENCE_GARDEN_AUDIO,
+  "seoul-rooftop-sunset": SEOUL_CITY_AMBIENCE_AUDIO,
+  "bali-sunrise-house": BALI_MORNING_AUDIO,
+  "new-zealand-mountain-cabin": NEW_ZEALAND_HOT_SPRING_AUDIO,
+  "california-coastal-morning": CALIFORNIA_COASTAL_WAVES_AUDIO,
+};
+
+let preparedPrimaryAudio: PreparedPrimaryAudio | null = null;
+
+function releaseAudioElement(audio: HTMLAudioElement) {
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
+  audio.remove();
+}
+
+/**
+ * Network/media preparation only. This function deliberately never calls
+ * play(), never creates/resumes an AudioContext, and never schedules events.
+ */
+export function preparePrimaryAmbientAudio(sceneId: string) {
+  if (typeof window === "undefined") return;
+  const source = PRIMARY_AUDIO_BY_SCENE_ID[sceneId];
+  if (!source || preparedPrimaryAudio?.sceneId === sceneId) return;
+  if (preparedPrimaryAudio) releaseAudioElement(preparedPrimaryAudio.audio);
+
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.muted = false;
+  audio.volume = 0;
+  audio.setAttribute("aria-hidden", "true");
+  audio.style.display = "none";
+  audio.src = source;
+  document.body.append(audio);
+  audio.load();
+  preparedPrimaryAudio = { sceneId, source, audio };
+}
+
+export function releasePreparedPrimaryAmbientAudio(sceneId?: string) {
+  if (!preparedPrimaryAudio || (sceneId && preparedPrimaryAudio.sceneId !== sceneId)) return;
+  releaseAudioElement(preparedPrimaryAudio.audio);
+  preparedPrimaryAudio = null;
+}
+
+function acquirePrimaryAudio(sceneId: string, source: string) {
+  let audio: HTMLAudioElement;
+  if (preparedPrimaryAudio?.sceneId === sceneId && preparedPrimaryAudio.source === source) {
+    audio = preparedPrimaryAudio.audio;
+    preparedPrimaryAudio = null;
+  } else {
+    if (preparedPrimaryAudio) releaseAudioElement(preparedPrimaryAudio.audio);
+    preparedPrimaryAudio = null;
+    audio = new Audio(source);
+  }
+  audio.preload = "auto";
+  audio.muted = false;
+  audio.volume = 0;
+  audio.setAttribute("aria-hidden", "true");
+  audio.style.display = "none";
+  if (!audio.isConnected) document.body.append(audio);
+  if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
+  return audio;
+}
+
+function createDeferredStandbyAudio() {
+  const audio = new Audio();
+  audio.preload = "none";
+  audio.loop = false;
+  audio.muted = false;
+  audio.volume = 0;
+  audio.setAttribute("aria-hidden", "true");
+  audio.style.display = "none";
+  document.body.append(audio);
+  return audio;
+}
+
+function prepareStandbyAudio(audio: HTMLAudioElement, source: string) {
+  if (audio.getAttribute("src")) return;
+  audio.preload = "auto";
+  audio.src = source;
+  audio.load();
+}
+
 const randomBetween = (minimum: number, maximum: number) => minimum + Math.random() * (maximum - minimum);
 
 class HokkaidoSoundscape {
@@ -99,24 +196,23 @@ class HokkaidoSoundscape {
   private fadeFrames = new Map<HTMLAudioElement, number>();
   private running = false;
 
-  private createPlayer(source: string, loop = false) {
-    const audio = new Audio();
-    audio.src = source;
+  private createPlayer(source: string, loop = false, primarySceneId?: string) {
+    const audio = primarySceneId ? acquirePrimaryAudio(primarySceneId, source) : new Audio(source);
     audio.preload = "auto";
     audio.loop = loop;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   ensure() {
     if (!this.players) {
       this.players = {
-        base: this.createPlayer(AUDIO.base, true),
+        base: this.createPlayer(AUDIO.base, true, "hokkaido-forest-cabin"),
         birds: this.createPlayer(AUDIO.birds),
         breeze: this.createPlayer(AUDIO.breeze),
       };
@@ -284,15 +380,15 @@ class KyotoRainSoundscape {
 
   private ensure() {
     if (!this.player) {
-      const audio = new Audio(KYOTO_RAIN_AUDIO);
+      const audio = acquirePrimaryAudio("kyoto-rainy-cafe", KYOTO_RAIN_AUDIO);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
       audio.volume = 0;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      document.body.append(audio);
-      audio.load();
+      if (!audio.isConnected) document.body.append(audio);
+      if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
     return this.player;
@@ -606,21 +702,21 @@ class IcelandAuroraSoundscape {
   private fadeFrames = new Map<HTMLAudioElement, number>();
   private running = false;
 
-  private createPlayer(source: string) {
-    const audio = new Audio(source);
+  private createPlayer(source: string, primarySceneId?: string) {
+    const audio = primarySceneId ? acquirePrimaryAudio(primarySceneId, source) : new Audio(source);
     audio.preload = "auto";
     audio.loop = true;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   private ensureOcean() {
-    if (!this.oceanPlayer) this.oceanPlayer = this.createPlayer(ICELAND_OCEAN_AUDIO);
+    if (!this.oceanPlayer) this.oceanPlayer = this.createPlayer(ICELAND_OCEAN_AUDIO, "iceland-aurora-lodge");
     return this.oceanPlayer;
   }
 
@@ -734,15 +830,15 @@ class ProvenceGardenSoundscape {
 
   private ensure() {
     if (!this.player) {
-      const audio = new Audio(PROVENCE_GARDEN_AUDIO);
+      const audio = acquirePrimaryAudio("provence-kitchen", PROVENCE_GARDEN_AUDIO);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
       audio.volume = 0;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      document.body.append(audio);
-      audio.load();
+      if (!audio.isConnected) document.body.append(audio);
+      if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
     this.ensureFilters();
@@ -1022,27 +1118,27 @@ class TuscanyTownSoundscape {
   private fountainDriftTo = 1;
   private running = false;
 
-  private createPlayer(source: string) {
-    const audio = new Audio(source);
+  private createPlayer(source: string, primarySceneId?: string) {
+    const audio = primarySceneId ? acquirePrimaryAudio(primarySceneId, source) : new Audio(source);
     audio.preload = "auto";
     audio.loop = false;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   private ensure() {
-    if (!this.players) this.players = [this.createPlayer(TUSCANY_TOWN_AUDIO), this.createPlayer(TUSCANY_TOWN_AUDIO)];
+    if (!this.players) this.players = [this.createPlayer(TUSCANY_TOWN_AUDIO, "tuscany-summer-villa"), createDeferredStandbyAudio()];
     return this.players;
   }
 
   private ensureFountains() {
     if (!this.fountainPlayers) {
-      this.fountainPlayers = [this.createPlayer(TUSCANY_FOUNTAIN_AUDIO), this.createPlayer(TUSCANY_FOUNTAIN_AUDIO)];
+      this.fountainPlayers = [this.createPlayer(TUSCANY_FOUNTAIN_AUDIO), createDeferredStandbyAudio()];
     }
     this.ensureFountainPosition();
     return this.fountainPlayers;
@@ -1183,6 +1279,8 @@ class TuscanyTownSoundscape {
     const incoming = this.activeIndex === 0 ? second : first;
     if (!outgoing.paused && !incoming.paused) return;
 
+    prepareStandbyAudio(incoming, TUSCANY_TOWN_AUDIO);
+
     this.cancelFade(outgoing);
     this.cancelFade(incoming);
     if (this.crossfadeFrame !== null) cancelAnimationFrame(this.crossfadeFrame);
@@ -1223,6 +1321,8 @@ class TuscanyTownSoundscape {
     const outgoing = this.fountainActiveIndex === 0 ? first : second;
     const incoming = this.fountainActiveIndex === 0 ? second : first;
     if (!outgoing.paused && !incoming.paused) return;
+
+    prepareStandbyAudio(incoming, TUSCANY_FOUNTAIN_AUDIO);
 
     this.cancelFade(outgoing);
     this.cancelFade(incoming);
@@ -1367,22 +1467,22 @@ class FinlandFireplaceSoundscape {
   private windFilter: BiquadFilterNode | null = null;
   private running = false;
 
-  private createPlayer(source: string) {
-    const audio = new Audio(source);
+  private createPlayer(source: string, primarySceneId?: string) {
+    const audio = primarySceneId ? acquirePrimaryAudio(primarySceneId, source) : new Audio(source);
     audio.preload = "auto";
     audio.loop = true;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   private ensureFireplace() {
     if (!this.fireplacePlayer) {
-      this.fireplacePlayer = this.createPlayer(FINLAND_FIREPLACE_AUDIO);
+      this.fireplacePlayer = this.createPlayer(FINLAND_FIREPLACE_AUDIO, "finland-glass-cabin");
     }
     return this.fireplacePlayer;
   }
@@ -1532,21 +1632,23 @@ class SeoulCitySoundscape {
   private windChimeHasPlayed = false;
   private running = false;
 
-  private createPlayer() {
-    const audio = new Audio(SEOUL_CITY_AMBIENCE_AUDIO);
-    audio.preload = "auto";
+  private createPlayer(primary = false) {
+    const audio = primary
+      ? acquirePrimaryAudio("seoul-rooftop-sunset", SEOUL_CITY_AMBIENCE_AUDIO)
+      : createDeferredStandbyAudio();
+    audio.preload = primary ? "auto" : "none";
     audio.loop = false;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (primary && audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   private ensure() {
-    if (!this.players) this.players = [this.createPlayer(), this.createPlayer()];
+    if (!this.players) this.players = [this.createPlayer(true), this.createPlayer()];
     this.ensureBirdReduction();
     return this.players;
   }
@@ -1698,6 +1800,8 @@ class SeoulCitySoundscape {
     const incoming = this.activeIndex === 0 ? second : first;
     if (!outgoing.paused && !incoming.paused) return;
 
+    prepareStandbyAudio(incoming, SEOUL_CITY_AMBIENCE_AUDIO);
+
     this.cancelFade(outgoing);
     this.cancelFade(incoming);
     if (this.crossfadeFrame !== null) cancelAnimationFrame(this.crossfadeFrame);
@@ -1820,15 +1924,15 @@ class NorwegianFjordSoundscape {
 
   private ensure() {
     if (!this.player) {
-      const audio = new Audio(NORWEGIAN_FJORD_WATER_AUDIO);
+      const audio = acquirePrimaryAudio("norwegian-fjord-house", NORWEGIAN_FJORD_WATER_AUDIO);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
       audio.volume = 0;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      document.body.append(audio);
-      audio.load();
+      if (!audio.isConnected) document.body.append(audio);
+      if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
     return this.player;
@@ -1915,6 +2019,7 @@ class CrossfadeAmbientSoundscape {
   private running = false;
 
   constructor(
+    private readonly sceneId: string,
     private readonly source: string,
     private readonly baseVolume: number,
     private readonly durationSeconds: number,
@@ -1922,21 +2027,21 @@ class CrossfadeAmbientSoundscape {
     private readonly fadeInMs = 2000,
   ) {}
 
-  private createPlayer() {
-    const audio = new Audio(this.source);
-    audio.preload = "auto";
+  private createPlayer(primary = false) {
+    const audio = primary ? acquirePrimaryAudio(this.sceneId, this.source) : createDeferredStandbyAudio();
+    audio.preload = primary ? "auto" : "none";
     audio.loop = false;
     audio.muted = false;
     audio.volume = 0;
     audio.setAttribute("aria-hidden", "true");
     audio.style.display = "none";
-    document.body.append(audio);
-    audio.load();
+    if (!audio.isConnected) document.body.append(audio);
+    if (primary && audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
     return audio;
   }
 
   private ensure() {
-    if (!this.players) this.players = [this.createPlayer(), this.createPlayer()];
+    if (!this.players) this.players = [this.createPlayer(true), this.createPlayer()];
     return this.players;
   }
 
@@ -1996,6 +2101,8 @@ class CrossfadeAmbientSoundscape {
     const outgoing = this.activeIndex === 0 ? first : second;
     const incoming = this.activeIndex === 0 ? second : first;
     if (!outgoing.paused && !incoming.paused) return;
+
+    prepareStandbyAudio(incoming, this.source);
 
     this.cancelFade(outgoing);
     this.cancelFade(incoming);
@@ -2096,15 +2203,15 @@ class SwissLakesSoundscape {
 
   private ensure() {
     if (!this.player) {
-      const audio = new Audio(SWISS_LAKES_AMBIENCE);
+      const audio = acquirePrimaryAudio("swiss-lakeside-morning", SWISS_LAKES_AMBIENCE);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
       audio.volume = 0;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      document.body.append(audio);
-      audio.load();
+      if (!audio.isConnected) document.body.append(audio);
+      if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
     return this.player;
@@ -2252,15 +2359,15 @@ class SingleAmbientSoundscape {
 
   private ensure() {
     if (!this.player) {
-      const audio = new Audio(this.source);
+      const audio = acquirePrimaryAudio("bali-sunrise-house", this.source);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
       audio.volume = 0;
       audio.setAttribute("aria-hidden", "true");
       audio.style.display = "none";
-      document.body.append(audio);
-      audio.load();
+      if (!audio.isConnected) document.body.append(audio);
+      if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
     return this.player;
@@ -2551,12 +2658,14 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
     exitFadeMs: 1800,
   });
   if (!newZealandHotSpringSoundscapeRef.current) newZealandHotSpringSoundscapeRef.current = new CrossfadeAmbientSoundscape(
+    "new-zealand-mountain-cabin",
     NEW_ZEALAND_HOT_SPRING_AUDIO,
     NEW_ZEALAND_HOT_SPRING_BASE_VOLUME,
     NEW_ZEALAND_HOT_SPRING_DURATION_SECONDS,
     NEW_ZEALAND_HOT_SPRING_CROSSFADE_SECONDS,
   );
   if (!californiaCoastalWavesSoundscapeRef.current) californiaCoastalWavesSoundscapeRef.current = new CrossfadeAmbientSoundscape(
+    "california-coastal-morning",
     CALIFORNIA_COASTAL_WAVES_AUDIO,
     CALIFORNIA_COASTAL_WAVES_BASE_VOLUME,
     CALIFORNIA_COASTAL_WAVES_DURATION_SECONDS,
