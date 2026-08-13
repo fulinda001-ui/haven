@@ -21,7 +21,9 @@ img { display: block; max-width: 100%; }
 .home-intro span { display: block; margin-top: 24px; color: var(--muted); font-size: 15px; }
 .mood-posters { width: min(1320px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 13px; }
 .mood-poster { position: relative; min-height: min(55vw, 500px); overflow: hidden; text-align: left; isolation: isolate; background: #1e241f; }
-.mood-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 600ms ease; }
+.mood-poster::before { content:""; position:absolute; inset:-8px; background:var(--mood-cover-preview) center/cover no-repeat; filter:blur(10px); transform:scale(1.06); }
+.mood-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity:0; transition: opacity 220ms cubic-bezier(.22,.61,.36,1), transform 600ms ease; }
+.mood-poster.is-cover-loaded img { opacity:1; }
 .mood-poster:hover img { transform: scale(1.02); }
 .poster-shade { position: absolute; inset: 0; background: linear-gradient(180deg, #0000 25%, #000c 100%); }
 .poster-copy { position: absolute; inset: auto 22px 22px; display: grid; gap: 9px; color: #fff; }
