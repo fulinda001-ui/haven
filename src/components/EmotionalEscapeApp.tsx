@@ -41,6 +41,20 @@ const SCENE_CARD_DIMENSIONS: Record<string, { width: number; height: number }> =
   "california-coastal-morning": { width: 1122, height: 1402 },
 };
 const HOKKAIDO_CARD_BLUR_DATA_URL = "data:image/jpeg;base64,/9j/2wBDABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z////////////////2wBDARsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z////////////////wgARCAAkABgDASIAAhEBAxEB/8QAGAABAAMBAAAAAAAAAAAAAAAAAAMEBQH/xAAXAQEBAQEAAAAAAAAAAAAAAAAAAQID/9oADAMBAAIQAxAAAAChq5WrxQIWkHati2EWVulAf//EACMQAAIBAwMEAwAAAAAAAAAAAAECAAMRIQQSMhMgMUEiUYH/2gAIAQEAAT8AQUyoJOZpQLW23msbaDiwM2ZVfM05CfA5P1NWd7ELFrjlbxOsowLZ9kmGvUKlScRGQep16VuEbYx4H8PZ/8QAGBEAAgMAAAAAAAAAAAAAAAAAABEBIEH/2gAIAQIBAT8A0gSp/8QAFBEBAAAAAAAAAAAAAAAAAAAAIP/aAAgBAwEBPwBf/9k=";
+const SCENE_CARD_BLUR_DATA_URLS: Record<string, string> = {
+  [HOKKAIDO_SCENE_ID]: HOKKAIDO_CARD_BLUR_DATA_URL,
+  "kyoto-rainy-cafe": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAADQAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgADQAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AwFRCjDHIGc1or8hDqAB7VQkl2xIcckkZ/KpGd4l3IT0B/OoizSSLskzu20445IzjI9KbvH/PJf8Avqs37fMQVOMnvTPtMnt+VOTbYlZH/9k=",
+  "swiss-lakeside-morning": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEAAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AsR3Fu/UED1xU6y2+7ADEeuKxo7iNP42Pt0pwvXx5m5gM5xntVslWOiLWka7nbFRfbLD+8fyqqt1azxgSEgkdc0zZZf8APV/zrMs//9k=",
+  "iceland-aurora-lodge": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEAAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8A57Y6vww7dDWvFBZONxRj7k1lIYx8oJA6kCnhgjfunIHsf6VMWluVJPoaZS3XO1gn0xUeIf8Anr/KqTXMoBJIcdsgfrUP2uT+6v5VpzIjlZ//2Q==",
+  "finland-glass-cabin": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEAAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8A5hVB61bFs5XOKrA4xjggVIZpD1c4ppiaZFJGOdo6VBg1aSUI+8/N7Gpvtcf/ADzWpbfRFRS6s//Z",
+  "norwegian-fjord-house": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEwAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEwAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8Aw4o4fvSgn5envWnYw6d5SmZNz989KyEcMgHfpWnZ3FvAAZuGqSi/qElnHDGkAA/eKxA46VD9si/umoL+8guhGqLhgRkj0qv5Y96EDZ//0OeRQrtirKc5zUC/fb6VNHUGhBcIqruUYNU9zetXrn7lZ9Mln//Z",
+  "tuscany-summer-villa": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEwAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEwAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AxonlicYG7HP9K3Le8HllAoAVTgk9/pWJG6kF1zkEfzqwsTMS/C7qx6mttC9qc0u1Ah+Vh29ax90v94065bAxnpx9ao7h60xH/9DDt+FyOtWQTVaD7lWBWZoRTgMvNVPLT0q5L0qtTEf/2Q==",
+  "provence-kitchen": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEAAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AyI5EC7jjJ/OrNgv7wkjIx3+tQxFG5TrjrVuNrhpEi6A8ZNYmhoXlwz26s/GPWsj7Qv8AeX8qfd+fEDDI3Gf8/hWbj3H5UW7gf//Z",
+  "seoul-rooftop-sunset": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAEqADAAQAAAABAAAAGAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAGAASAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AktPtLLunfOCRgjnj3FaKoDXLC4l2Z3cZJ/GnpdTg/I5yfQ1yuLfU6FJLodRsWjYtcz9ouf7zfrSfabn+8361Ps5dx8y7H//QwmMaEsCORwKc1wmF6cenBNUX+9+FN9Kz5TW5d+0x/wBz9aPtEf8Ac/WqVFHKhczP/9k=",
+  "bali-sunrise-house": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAEAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAEAAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8Aka9hWIsrKxGOlXw0UqlEYcjHHWuQaKVFy3T8K0beCQY3vs5zUzY4I1ZdJiaPEalTjqao/wBiyeorSAt3TaGJP+fek8iP1/z+dYczNuVH/9k=",
+  "new-zealand-mountain-cabin": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAADQAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgADQAYAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AylkieTzTGD0AB9a1o7snCmMZrAF067WwM/4VKLppMblHWs9TXRnSm/tYc+YuGx0FR/2ta/3K5l87yM+/NM+b2/Kp5Q5j/9k=",
+  "california-coastal-morning": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAE6ADAAQAAAABAAAAGAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAGAATAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8A1BajGcVmXWmea5eZwFA46D9a0RdN5QyT9TxWBe3LeYcNmo531L5F0KxsrYHBlU/QE0n2O2/56j/vk1VOc96OfQ0cwrH/0MWNmYnzWJzUUvL7egHSnR/eps33/wAKjqadBd0Z9qN0dQUU7E3P/9k=",
+};
 const MOOD_COVER_BLUR_DATA_URLS: Record<Mood["id"], string> = {
   quiet: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAEqADAAQAAAABAAAAGAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAGAASAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8Ai0pv3kqN34NV7htqsP8APUVTs5ijlgec5qa6bJJ7ms+pXQqlnJJzSbn9aj3H3o3H3qyT/9Dm4zg5BwO9aLTxeUFB4/2uf5VlDpUh+7UtFJkxA/2aMf7v51BRUlH/2Q==",
   escape: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAEqADAAQAAAABAAAAGAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAGAASAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAFRUVFRUVJBUVJDMkJCQzRTMzMzNFV0VFRUVFV2hXV1dXV1doaGhoaGhoaH19fX19fZKSkpKSpKSkpKSkpKSkpP/bAEMBGRsbKicqSCcnSKx0X3SsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrP/dAAQAAv/aAAwDAQACEQMRAD8AwIlABSQYIqRoscrzTUl2nJXJqSSYt/q0Vf51SYmkV/m9KT5vSmbpfajdLVXJP//Q5lG+b6VZLg1ST71WO1WiWGR6UZHpSUlMR//Z",
@@ -206,8 +220,47 @@ function BaliMorningLayer() {
   </div>;
 }
 
+type ProgressiveCardImageProps = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  sizes: string;
+  blurDataURL: string;
+  className: string;
+  preload?: boolean;
+  loading?: "eager" | "lazy";
+  decoding?: "async" | "sync" | "auto";
+  fetchPriority?: "high" | "low" | "auto";
+};
+
+function ProgressiveCardImage({ src, alt, width, height, sizes, blurDataURL, className, preload, loading, decoding, fetchPriority }: ProgressiveCardImageProps) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div
+      className={`progressive-card-image ${className} ${loaded ? "is-loaded" : ""}`}
+      style={{ "--card-image-preview": `url("${blurDataURL}")` } as KyotoStyle}
+    >
+      <NextImage
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        sizes={sizes}
+        preload={preload}
+        loading={loading}
+        decoding={decoding}
+        fetchPriority={fetchPriority}
+        placeholder="blur"
+        blurDataURL={blurDataURL}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
 function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
-  const [coverLoaded, setCoverLoaded] = useState(false);
   const blurDataURL = MOOD_COVER_BLUR_DATA_URLS[mood.id];
   const prepareOnIntent = () => {
     const firstScene = scenesForMood(mood.id)[0];
@@ -215,8 +268,8 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
   };
 
   return (
-    <button className={`mood-poster ${coverLoaded ? "is-cover-loaded" : ""}`} style={{ "--mood-cover-preview": `url("${blurDataURL}")` } as KyotoStyle} onClick={onChoose} onPointerEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent}>
-      <NextImage src={mood.coverImage} alt="" width={1800} height={1200} sizes={MOOD_CARD_SIZES} preload={mood.id === "quiet"} placeholder="blur" blurDataURL={blurDataURL} onLoad={() => setCoverLoaded(true)} />
+    <button className="mood-poster" onClick={onChoose} onPointerEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent}>
+      <ProgressiveCardImage src={mood.coverImage} alt="" width={1800} height={1200} sizes={MOOD_CARD_SIZES} preload={mood.id === "quiet"} blurDataURL={blurDataURL} className="mood-cover-image" />
       <span className="poster-shade" aria-hidden="true" />
       <span className="poster-copy">
         <small>{mood.name}</small>
@@ -228,33 +281,9 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
   );
 }
 
-function HokkaidoCardImage({ scene, dimensions }: { scene: Scene; dimensions: { width: number; height: number } }) {
-  const [loaded, setLoaded] = useState(false);
-
-  return (
-    <div
-      className={`hokkaido-card-image-frame ${loaded ? "is-loaded" : ""}`}
-      style={{ "--hokkaido-card-preview": `url("${HOKKAIDO_CARD_BLUR_DATA_URL}")` } as KyotoStyle}
-    >
-      <NextImage
-        src={scene.coverImage}
-        alt={`${scene.name}, ${scene.location}`}
-        width={dimensions.width}
-        height={dimensions.height}
-        sizes={SCENE_CARD_SIZES}
-        loading="lazy"
-        decoding="async"
-        fetchPriority="high"
-        placeholder="blur"
-        blurDataURL={HOKKAIDO_CARD_BLUR_DATA_URL}
-        onLoad={() => setLoaded(true)}
-      />
-    </div>
-  );
-}
-
 function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }) {
   const dimensions = SCENE_CARD_DIMENSIONS[scene.id] ?? DEFAULT_SCENE_CARD_DIMENSIONS;
+  const blurDataURL = SCENE_CARD_BLUR_DATA_URLS[scene.id];
   const prepareOnIntent = () => {
     preparePrimaryAmbientAudio(scene.id);
     if (scene.id === HOKKAIDO_SCENE_ID) void prepareSceneHero(scene.backgroundImage);
@@ -268,7 +297,18 @@ function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }
 
   return (
     <article className={`scene-poster ${scene.id === HOKKAIDO_SCENE_ID ? "scene-poster--hokkaido" : ""} ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={prepareOnIntent} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
-      {scene.id === HOKKAIDO_SCENE_ID ? <HokkaidoCardImage scene={scene} dimensions={dimensions} /> : <NextImage src={scene.coverImage} alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`} width={dimensions.width} height={dimensions.height} sizes={SCENE_CARD_SIZES} loading="lazy" decoding="async" fetchPriority="auto" />}
+      <ProgressiveCardImage
+        src={scene.coverImage}
+        alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`}
+        width={dimensions.width}
+        height={dimensions.height}
+        sizes={SCENE_CARD_SIZES}
+        loading="lazy"
+        decoding="async"
+        fetchPriority={scene.id === HOKKAIDO_SCENE_ID ? "high" : "auto"}
+        blurDataURL={blurDataURL}
+        className="scene-poster-image"
+      />
       <div className="scene-poster-copy">
         <p>{scene.location}</p>
         <h2>{scene.name}</h2>
