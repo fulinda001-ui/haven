@@ -110,11 +110,20 @@ img { display: block; max-width: 100%; }
 .scene-introduction-image { height: min(70vh, 720px); background: #d7ddd5; transition:transform 1650ms cubic-bezier(.22,.61,.36,1); }
 .scene-introduction-image img { width: 100%; height: 100%; object-fit: cover; }
 .scene-introduction-copy { max-width: 560px; transition:opacity 420ms ease, transform 420ms ease; }
-.scene-introduction-copy > p { margin: 0 0 20px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.scene-introduction-copy > p { margin: 0 0 12px; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.scene-introduction-copy h2 { margin: 0 0 38px; font: 500 clamp(27px, 3vw, 40px)/1.08 "Playfair Display", serif; letter-spacing: -.035em; }
 .scene-introduction-copy h1 { margin: 0; font: 500 clamp(44px, 5.7vw, 82px)/1.02 "Playfair Display", serif; letter-spacing: -.055em; }
 .scene-atmosphere { display: flex; gap: 18px; margin: 32px 0; color: var(--muted); font-size: 13px; }
 .scene-atmosphere span + span { padding-left: 18px; border-left: 1px solid var(--line); }
-.enter-scene { padding: 0 0 8px; background: transparent; border-bottom: 1px solid currentColor; font-size: 14px; transition:opacity 300ms ease; }
+.enter-scene { position:relative; padding:0 0 8px; background:transparent; border-bottom:1px solid currentColor; font-size:14px; transition:opacity 300ms ease; }
+.enter-scene::after { content:""; position:absolute; left:0; bottom:-1px; width:102.5%; height:1px; pointer-events:none; background:currentColor; transform:scaleX(.9756); transform-origin:left center; transition:transform 240ms cubic-bezier(.22,.61,.36,1); }
+.enter-scene i { display:inline-block; transform:translateX(0); transition:transform 240ms cubic-bezier(.22,.61,.36,1); }
+.enter-scene:focus-visible::after { transform:scaleX(1); transition-duration:200ms; transition-timing-function:cubic-bezier(.2,.7,.3,1); }
+.enter-scene:focus-visible i { transform:translateX(5px); transition-duration:200ms; transition-timing-function:cubic-bezier(.2,.7,.3,1); }
+@media (hover:hover) and (pointer:fine) {
+  .enter-scene:hover::after { transform:scaleX(1); transition-duration:200ms; transition-timing-function:cubic-bezier(.2,.7,.3,1); }
+  .enter-scene:hover i { transform:translateX(5px); transition-duration:200ms; transition-timing-function:cubic-bezier(.2,.7,.3,1); }
+}
 .enter-scene:disabled { cursor: default; opacity:.45; }
 .coming-soon { display: grid; gap: 8px; max-width: 300px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .coming-soon b { color: var(--ink); font: 500 21px "Playfair Display", serif; }
@@ -156,7 +165,29 @@ img { display: block; max-width: 100%; }
 
 @media (max-width: 900px) { .mood-posters { grid-template-columns: repeat(2, 1fr); } .mood-poster { min-height: 390px; } .scene-poster-grid { grid-template-columns: 1fr; max-width: 620px; } .scene-poster { min-height: 0; } .scene-poster > img,.scene-poster--hokkaido > .hokkaido-card-image-frame { height: 350px; } .scene-introduction { grid-template-columns: 1fr; padding-top: 95px; gap: 36px; } .scene-introduction-image { height: 42vh; } .introduction-note { display: none; } }
 @media (max-width: 560px) { .escape-home { padding: 25px 16px 36px; gap: 42px; } .home-intro h1 { font-size: 48px; } .mood-posters { gap: 8px; } .mood-poster { min-height: 310px; } .poster-copy { inset: auto 14px 16px; } .poster-copy strong { font-size: 24px; } .poster-copy em { display: none; } .mood-collection { padding: 24px 16px 48px; } .mood-collection header { margin: 78px 0 35px; } .mood-collection h1 { font-size: 45px; } .scene-poster > img,.scene-poster--hokkaido > .hokkaido-card-image-frame { height: 290px; } .scene-introduction { padding: 82px 24px 32px; } .scene-introduction .quiet-back { top: 28px; left: 24px; } .scene-introduction-copy h1 { font-size: 48px; } .scene-atmosphere { flex-direction: column; gap: 8px; } .scene-controls { left: 16px; right: auto; bottom: 18px; } .scene-exists { display: none; } }
-.scene-stage{min-height:100svh;position:relative;overflow:hidden;background:#202a22;color:#fff;isolation:isolate}.scene-stage .scene-viewport{position:absolute;inset:0;z-index:-3;overflow:hidden}.scene-stage .camera-enter-leave{position:absolute;inset:-4%;will-change:transform;transform:scale(1) translate3d(0,0,0);transition:transform 2100ms cubic-bezier(.22,.61,.36,1)}.scene-stage.is-entering .camera-enter-leave,.scene-stage.is-active .camera-enter-leave{transform:scale(1.014) translate3d(1px,-2px,0)}.scene-stage.is-leaving .camera-enter-leave{transform:scale(1) translate3d(0,0,0);transition-duration:1200ms}.scene-stage .camera-scale,.scene-stage .camera-drift-x,.scene-stage .camera-drift-y,.scene-stage .living-scene-image{position:absolute;inset:0}.scene-stage .camera-scale{will-change:transform;animation:camera-scale 47s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-x{will-change:transform;animation:camera-drift-x 61s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-y{will-change:transform;animation:camera-drift-y 73s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .living-scene-image{background:center/cover no-repeat}.scene-stage .ambient-light{z-index:-2}.scene-stage .scene-introduction-copy{position:absolute;z-index:1;left:clamp(28px,8vw,150px);bottom:clamp(72px,12vh,150px);max-width:min(560px,calc(100vw - 56px));color:#fff;text-shadow:0 2px 26px #071108b8}.scene-stage .scene-introduction-copy>p{color:#fff;opacity:.78}.scene-stage .scene-atmosphere{color:#fff;opacity:.82}.scene-stage .scene-atmosphere span+span{border-color:#ffffff66}.scene-stage .enter-scene{color:#fff}.scene-stage .quiet-back{position:absolute;z-index:2;top:clamp(28px,5vw,62px);left:clamp(28px,5vw,62px);color:#fff}.scene-stage .introduction-note{z-index:1;color:#fff;opacity:.8}.scene-stage .scene-presence,.scene-stage .scene-controls,.scene-stage .scene-exists{z-index:2;transition:opacity 520ms ease}.scene-stage.is-intro .scene-presence,.scene-stage.is-intro .scene-controls,.scene-stage.is-intro .scene-exists{opacity:0;pointer-events:none}.scene-stage.is-active .scene-introduction-copy,.scene-stage.is-active .quiet-back,.scene-stage.is-active .introduction-note{opacity:0;pointer-events:none;transition:opacity 420ms ease}.scene-stage.is-entering .scene-introduction-copy,.scene-stage.is-entering .quiet-back,.scene-stage.is-entering .introduction-note{opacity:0;transform:translate3d(0,-5px,0);transition:opacity 420ms ease,transform 420ms ease}.scene-stage.is-entering .scene-presence,.scene-stage.is-entering .scene-controls,.scene-stage.is-entering .scene-exists{opacity:0}.scene-stage.is-entering .scene-transition-veil{opacity:.42;animation:veil-arrival 1800ms ease forwards}.scene-stage.is-leaving .scene-presence,.scene-stage.is-leaving .scene-controls,.scene-stage.is-leaving .scene-exists,.scene-stage.is-leaving .ambient-light{opacity:0}.scene-stage.is-leaving .scene-transition-veil{opacity:.48;transition:opacity 700ms ease 350ms}.scene-stage .scene-transition-veil{z-index:4}.scene-stage .scene-grain{z-index:-1}
+.scene-stage{min-height:100svh;position:relative;overflow:hidden;background:#202a22;color:#fff;isolation:isolate}.scene-stage .scene-viewport{position:absolute;inset:0;z-index:-3;overflow:hidden}.scene-stage .camera-enter-leave{position:absolute;inset:-4%;will-change:transform;transform:scale(1) translate3d(0,0,0);transition:transform 2100ms cubic-bezier(.22,.61,.36,1)}.scene-stage.is-entering .camera-enter-leave{transform:scale(1.014) translate3d(1px,-2px,0)}.scene-stage.is-active .camera-enter-leave,.scene-stage.is-leaving .camera-enter-leave{transform:scale(1) translate3d(0,0,0)}.scene-stage.is-leaving .camera-enter-leave{transition-duration:1200ms}.scene-stage .camera-scale,.scene-stage .camera-drift-x,.scene-stage .camera-drift-y,.scene-stage .living-scene-image{position:absolute;inset:0}.scene-stage .camera-scale{will-change:transform;animation:camera-scale 47s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-x{will-change:transform;animation:camera-drift-x 61s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-y{will-change:transform;animation:camera-drift-y 73s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .living-scene-image{background:center/cover no-repeat}.scene-stage .ambient-light{z-index:-2}.scene-stage .scene-introduction-copy{position:absolute;z-index:1;left:clamp(28px,8vw,150px);bottom:clamp(72px,12vh,150px);max-width:min(560px,calc(100vw - 56px));color:#fff;text-shadow:0 2px 26px #071108b8}.scene-stage .scene-introduction-copy>p{color:#fff;opacity:.78}.scene-stage .scene-atmosphere{color:#fff;opacity:.82}.scene-stage .scene-atmosphere span+span{border-color:#ffffff66}.scene-stage .enter-scene{color:#fff}.scene-stage .quiet-back{position:absolute;z-index:2;top:clamp(28px,5vw,62px);left:clamp(28px,5vw,62px);color:#fff}.scene-stage .introduction-note{z-index:1;color:#fff;opacity:.8}.scene-stage .scene-presence,.scene-stage .scene-controls,.scene-stage .scene-exists{z-index:2;transition:opacity 520ms ease}.scene-stage.is-intro .scene-presence,.scene-stage.is-intro .scene-controls,.scene-stage.is-intro .scene-exists{opacity:0;pointer-events:none}.scene-stage.is-active .scene-introduction-copy,.scene-stage.is-active .quiet-back,.scene-stage.is-active .introduction-note{opacity:0;pointer-events:none;transition:opacity 420ms ease}.scene-stage.is-entering .scene-introduction-copy,.scene-stage.is-entering .quiet-back,.scene-stage.is-entering .introduction-note{opacity:0;transition:opacity 420ms ease}.scene-stage.is-entering .scene-presence,.scene-stage.is-entering .scene-controls,.scene-stage.is-entering .scene-exists{opacity:0}.scene-stage.is-entering .scene-transition-veil{opacity:.42;animation:veil-arrival 1800ms ease forwards}.scene-stage.is-leaving .scene-presence,.scene-stage.is-leaving .scene-controls,.scene-stage.is-leaving .scene-exists,.scene-stage.is-leaving .ambient-light{opacity:0}.scene-stage.is-leaving .scene-transition-veil{opacity:.48;transition:opacity 700ms ease 350ms}.scene-stage .scene-transition-veil{z-index:4}.scene-stage .scene-grain{z-index:-1}
+
+/* Scene entry remains one continuous frame: a brief, restrained departure
+   from the landing composition before the existing full-scene expansion. */
+.scene-entry-shade { position:absolute; inset:0; z-index:1; pointer-events:none; background:#000; opacity:0; transition:opacity 1020ms cubic-bezier(.22,1,.36,1); }
+.scene-stage.is-pressing-enter .shared-scene-frame { transition:none; }
+.scene-stage.is-entering .shared-scene-frame { will-change:transform,border-radius; box-shadow:none; }
+.scene-stage.is-intro.is-entering .shared-scene-frame { transition-duration:1600ms; transition-timing-function:cubic-bezier(.22,.61,.36,1); }
+.scene-stage.is-intro.is-entering .scene-entry-shade { opacity:.13; }
+.scene-stage.is-pressing-enter .enter-scene i { transform:translateX(7px); transition-duration:120ms; }
+.scene-stage.is-entering .scene-introduction-copy > p,
+.scene-stage.is-entering .scene-introduction-copy > h2,
+.scene-stage.is-entering .scene-introduction-copy > h1,
+.scene-stage.is-entering .scene-atmosphere,
+.scene-stage.is-entering .introduction-note,
+.scene-stage.is-entering .enter-scene { opacity:0; transition-property:opacity; transition-duration:500ms; transition-timing-function:cubic-bezier(.4,0,.35,1); }
+.scene-stage.is-entering .scene-introduction-copy > p { transition-delay:400ms; }
+.scene-stage.is-entering .scene-introduction-copy > h2 { transition-delay:450ms; }
+.scene-stage.is-entering .scene-atmosphere { transition-delay:500ms; }
+.scene-stage.is-entering .introduction-note { transition-delay:550ms; }
+.scene-stage.is-entering .enter-scene { transition-delay:600ms; }
+.scene-stage.is-entering .scene-introduction-copy > h1 { transition-delay:650ms; }
+.scene-stage.is-active.is-entering .shared-scene-frame { opacity:1; }
 
 /* Hokkaido enter: one persistent image, measured in its card and then expanded. */
 .scene-stage .shared-scene-frame {
@@ -165,12 +196,8 @@ img { display: block; max-width: 100%; }
   border-radius: 24px;
   box-shadow: 0 18px 55px #17201922;
   transition:
-    left 1600ms cubic-bezier(.22,1,.36,1),
-    top 1600ms cubic-bezier(.22,1,.36,1),
-    width 1600ms cubic-bezier(.22,1,.36,1),
-    height 1600ms cubic-bezier(.22,1,.36,1),
-    border-radius 1600ms cubic-bezier(.22,1,.36,1),
-    transform 1600ms cubic-bezier(.22,1,.36,1);
+    border-radius 1600ms cubic-bezier(.22,.61,.36,1),
+    transform 1600ms cubic-bezier(.22,.61,.36,1);
 }
 .scene-stage--hokkaido-cabin .shared-scene-frame { background:#263329; }
 .scene-stage--hokkaido-cabin .living-scene-image { background-color:#263329; }
@@ -284,6 +311,15 @@ img { display: block; max-width: 100%; }
 .scene-stage.is-intro .scene-atmosphere span + span { border-color: var(--line); }
 .scene-stage.is-intro.is-entering .scene-introduction-copy { transform: translateY(calc(-50% - 5px)); }
 .scene-stage.is-entering .scene-transition-veil { opacity: 0 !important; animation: none !important; }
+.scene-stage.is-intro.is-entering .scene-introduction-copy { opacity:1; transform:translateY(-50%); transition:none; }
+.scene-stage.is-intro.is-entering .quiet-back { transform:none; transition:opacity 260ms cubic-bezier(.4,0,.6,1); }
+.scene-stage.is-intro.is-entering .camera-enter-leave,
+.scene-stage.is-active.is-entering .camera-enter-leave { transform:scale(1) translate3d(0,0,0) !important; transition:none !important; }
+.scene-stage.is-active.is-entering .finland-aurora-layer,
+.scene-stage.is-active.is-entering .kyoto-living-layer,
+.scene-stage.is-active.is-entering .swiss-mist-layer,
+.scene-stage.is-active.is-entering .bali-morning-layer { animation:scene-living-layer-arrival 520ms cubic-bezier(.4,0,.3,1) both; }
+@keyframes scene-living-layer-arrival { from { opacity:0; } to { opacity:1; } }
 @keyframes camera-scale{0%,100%{transform:scale(1.021)}22%{transform:scale(1.029)}49%{transform:scale(1.035)}71%{transform:scale(1.03)}}@keyframes camera-drift-x{0%,100%{transform:translate3d(1px,0,0)}19%{transform:translate3d(-4px,0,0)}46%{transform:translate3d(-1px,0,0)}74%{transform:translate3d(7px,0,0)}}@keyframes camera-drift-y{0%,100%{transform:translate3d(0,-1px,0)}31%{transform:translate3d(0,-6px,0)}58%{transform:translate3d(0,2px,0)}82%{transform:translate3d(0,-3px,0)}}
 
 /* Finnish Glass Cabin: five independently evolving ribbons remain inside the
@@ -354,7 +390,7 @@ img { display: block; max-width: 100%; }
 @keyframes swiss-mist-shore-right { 0% { transform:translate3d(-5vw,0,0) scaleX(.98); opacity:.12; } 35% { transform:translate3d(-4.5vw,-.04vh,0) scaleX(.99); opacity:.145; } 67% { transform:translate3d(1vw,.11vh,0) scaleX(1.025); opacity:.125; } 100% { transform:translate3d(6vw,.18vh,0) scaleX(1.04); opacity:.14; } }
 @keyframes swiss-mist-lake-left { 0% { transform:translate3d(4vw,.2vh,0) scaleX(1.03); opacity:.065; } 32% { transform:translate3d(4.5vw,.18vh,0) scaleX(1.035); opacity:.09; } 70% { transform:translate3d(-2vw,-.08vh,0) scaleX(.98); opacity:.075; } 100% { transform:translate3d(-4vw,-.1vh,0) scaleX(.965); opacity:.085; } }
 @keyframes swiss-mist-lake-right { 0% { transform:translate3d(-4vw,.1vh,0) scaleX(.98); opacity:.055; } 28% { transform:translate3d(-3.5vw,.05vh,0) scaleX(.99); opacity:.075; } 61% { transform:translate3d(2vw,-.09vh,0) scaleX(1.015); opacity:.065; } 100% { transform:translate3d(5vw,-.16vh,0) scaleX(1.03); opacity:.075; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer,.bali-morning-layer{display:none}.scene-transition-veil{display:none} }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-enter-leave{transform:none!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer,.bali-morning-layer{display:none}.scene-transition-veil{display:none} }
 
 @media (max-width: 780px) {
   .escape-home,.mood-collection,.your-world-page { padding:28px 22px; }

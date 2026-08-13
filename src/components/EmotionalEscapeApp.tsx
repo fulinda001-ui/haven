@@ -2,6 +2,7 @@
 
 import NextImage, { getImageProps } from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { flushSync } from "react-dom";
 import { moods, moodById, sceneById, scenesForMood, type Mood, type Scene } from "@/data/scenes";
 import { BALI_SUNRISE_DESTINATION_ID, markScenePlaceDiscovered } from "@/data/destinations";
 import { migrateHavenStorage } from "@/data/havenStorage";
@@ -22,6 +23,9 @@ const sceneCardImagePreparations = new Map<string, Promise<ImagePreparation>>();
 const MOOD_CARD_SIZES = "(max-width: 900px) 50vw, 330px";
 const SCENE_CARD_SIZES = "(max-width: 900px) calc(100vw - 32px), 420px";
 const DEFAULT_SCENE_CARD_DIMENSIONS = { width: 1536, height: 1024 };
+const SHARED_SCENE_TRANSITION_MS = 1600;
+const SHARED_SCENE_HANDOFF_MS = 1200;
+const SHARED_SCENE_STYLE_RELEASE_MS = 1700;
 const SCENE_CARD_DIMENSIONS: Record<string, { width: number; height: number }> = {
   "hokkaido-forest-cabin": { width: 1800, height: 2700 },
   "kyoto-rainy-cafe": { width: 1672, height: 941 },
@@ -336,7 +340,9 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const isNewZealandMountainCabin = scene.id === "new-zealand-mountain-cabin";
   const isCaliforniaCoastalMorning = scene.id === "california-coastal-morning";
   const hasAmbientSoundscape = isHokkaidoCabin || isIcelandAuroraLodge || isFinlandGlassCabin || isNorwegianFjordHouse || isTuscanySummerVilla || isProvenceKitchen || isSeoulRooftopSunset || isKyotoRainyCafe || isSwissLakes || isBaliSunriseHouse || isNewZealandMountainCabin || isCaliforniaCoastalMorning;
+  const [pressingEnter, setPressingEnter] = useState(false);
   const [entering, setEntering] = useState(false);
+  const [livingLayersReady, setLivingLayersReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(false);
@@ -358,7 +364,11 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   });
   const { session: activeSession, remainingMs, completed, announcement, start, pause, resume, addTenMinutes, end, continueWithoutTimer, clearCompletion } = sessionTimer;
 
-  useEffect(() => { if (mode === "intro") setLeaving(false); }, [mode]);
+  useEffect(() => {
+    if (mode !== "intro") return;
+    setLeaving(false);
+    setLivingLayersReady(false);
+  }, [mode]);
 
   useEffect(() => {
     if (!isHokkaidoCabin) return;
@@ -425,7 +435,9 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   }, [activeSession, end, hasAmbientSoundscape, mode, pause, resume, scene.city, scene.coverImage, scene.id, soundOn]);
 
   const enter = async () => {
-    if (entering) return;
+    if (pressingEnter || entering) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setPressingEnter(true);
 
     // The first playback request remains inside this actual user click, before
     // any navigation, visual transition, timer, or state change occurs.
@@ -437,38 +449,55 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       audio.muted = false;
       audio.volume = 0;
       audio.loop = true;
-      try {
-        await audio.play();
+      void audio.play().then(() => {
         ambientAudioRef.current?.startSoundscape();
-      } catch {
+      }).catch(() => {
         // Keep the visual scene available if a browser/device explicitly blocks sound.
-      }
-    }
-
-    // Freeze the exact preview-card geometry before changing routes. SceneStage
-    // remains mounted between intro and active mode, so this is the same image
-    // element all the way through the expansion.
-    const stageBounds = stageRef.current?.getBoundingClientRect();
-    const previewBounds = sharedFrameRef.current?.getBoundingClientRect();
-    if (stageBounds && previewBounds) {
-      setSharedFrameStyle({
-        left: `${previewBounds.left - stageBounds.left}px`,
-        top: `${previewBounds.top - stageBounds.top}px`,
-        width: `${previewBounds.width}px`,
-        height: `${previewBounds.height}px`,
-        borderRadius: getComputedStyle(sharedFrameRef.current!).borderRadius,
-        transform: "none",
       });
     }
 
+    // Let the pressed state register before the cinematic transition begins.
+    await new Promise((resolve) => window.setTimeout(resolve, reduceMotion ? 0 : 120));
+
+    // Measure once, then render the existing fullscreen frame through the
+    // inverse Landing transform. The compositor can animate that single Hero
+    // back to identity without recalculating layout on every frame.
+    const stageBounds = stageRef.current?.getBoundingClientRect();
+    const previewBounds = sharedFrameRef.current?.getBoundingClientRect();
+    if (stageBounds && previewBounds) {
+      const landingTransform = `translate3d(${previewBounds.left - stageBounds.left}px, ${previewBounds.top - stageBounds.top}px, 0) scale3d(${previewBounds.width / stageBounds.width}, ${previewBounds.height / stageBounds.height}, 1)`;
+      const invertedFullscreenFrame: CSSProperties = {
+        left: "0px",
+        top: "0px",
+        width: "100%",
+        height: "100%",
+        borderRadius: getComputedStyle(sharedFrameRef.current!).borderRadius,
+        transform: landingTransform,
+        transformOrigin: "top left",
+      };
+      // Commit the inverse state while the pressed class still disables the
+      // transition. This guarantees the first FLIP frame is painted at the
+      // Landing geometry instead of being batched with the identity frame.
+      flushSync(() => setSharedFrameStyle(invertedFullscreenFrame));
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setSharedFrameStyle({
+          ...invertedFullscreenFrame,
+          borderRadius: "0px",
+          transform: "translate3d(0, 0, 0) scale3d(1, 1, 1)",
+        }));
+      });
+    }
+
+    setPressingEnter(false);
     setEntering(true);
-    window.requestAnimationFrame(() => {
+    window.setTimeout(() => {
       onEnter();
-      // The active scene is now behind the same frozen image. On the next
-      // frame remove the inline card geometry so CSS interpolates it to inset:0.
-      window.requestAnimationFrame(() => setSharedFrameStyle(undefined));
-    });
-    window.setTimeout(() => setEntering(false), 1800);
+      // Non-critical living layers wait until the compositor-sensitive Hero
+      // motion is already near fullscreen.
+      window.setTimeout(() => setLivingLayersReady(true), reduceMotion ? 0 : 180);
+    }, reduceMotion ? 80 : SHARED_SCENE_HANDOFF_MS);
+    window.setTimeout(() => setSharedFrameStyle(undefined), reduceMotion ? 140 : SHARED_SCENE_STYLE_RELEASE_MS);
+    window.setTimeout(() => setEntering(false), reduceMotion ? 180 : SHARED_SCENE_TRANSITION_MS + 380);
   };
   const leave = () => {
     if (leaving) return;
@@ -505,15 +534,15 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const hokkaidoHeroFailed = isHokkaidoCabin && failedHokkaidoImage === scene.backgroundImage;
 
   return (
-    <main ref={stageRef} className={`scene-stage ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${isNewZealandMountainCabin ? "scene-stage--new-zealand-mountain-cabin" : ""} ${isCaliforniaCoastalMorning ? "scene-stage--california-coastal-morning" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
+    <main ref={stageRef} className={`scene-stage ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${isNewZealandMountainCabin ? "scene-stage--new-zealand-mountain-cabin" : ""} ${isCaliforniaCoastalMorning ? "scene-stage--california-coastal-morning" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${pressingEnter ? "is-pressing-enter" : ""} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
       <AmbientAudio ref={ambientAudioRef} sceneId={scene.id} />
-      <div className="scene-viewport" aria-hidden="true"><div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}><div className="camera-enter-leave"><div className="camera-scale"><div className="camera-drift-x"><div className="camera-drift-y"><div className={`living-scene-image ${isHokkaidoCabin ? "hokkaido-hero-image" : ""} ${hokkaidoHeroReady ? "is-ready" : "is-pending"} ${hokkaidoHeroFailed ? "has-error" : ""}`} style={hokkaidoHeroReady ? { backgroundImage: `url(${scene.backgroundImage})` } : undefined} /></div></div></div></div></div></div>
+      <div className="scene-viewport" aria-hidden="true"><div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}><div className="camera-enter-leave"><div className="camera-scale"><div className="camera-drift-x"><div className="camera-drift-y"><div className={`living-scene-image ${isHokkaidoCabin ? "hokkaido-hero-image" : ""} ${hokkaidoHeroReady ? "is-ready" : "is-pending"} ${hokkaidoHeroFailed ? "has-error" : ""}`} style={hokkaidoHeroReady ? { backgroundImage: `url(${scene.backgroundImage})` } : undefined} /></div></div></div></div></div><div className="scene-entry-shade" /></div>
       <div className="ambient-light ambient-light-warm" aria-hidden="true" /><div className="ambient-light ambient-light-cool" aria-hidden="true" /><div className="scene-grain" aria-hidden="true" />
-      {isFinlandGlassCabin && mode === "active" && <FinlandAuroraLayer />}
-      {isKyotoRainyCafe && mode === "active" && <KyotoLivingLayer />}
-      {isSwissLakes && mode === "active" && <SwissMistLayer />}
-      {isBaliSunriseHouse && mode === "active" && <BaliMorningLayer />}
-      <section className="scene-introduction-copy"><p>{scene.location}</p><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id)} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id)} onFocus={() => preparePrimaryAmbientAudio(scene.id)} onPointerDown={() => preparePrimaryAmbientAudio(scene.id)} onTouchStart={() => preparePrimaryAmbientAudio(scene.id)}>Enter {scene.city} <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
+      {isFinlandGlassCabin && mode === "active" && livingLayersReady && <FinlandAuroraLayer />}
+      {isKyotoRainyCafe && mode === "active" && livingLayersReady && <KyotoLivingLayer />}
+      {isSwissLakes && mode === "active" && livingLayersReady && <SwissMistLayer />}
+      {isBaliSunriseHouse && mode === "active" && livingLayersReady && <BaliMorningLayer />}
+      <section className="scene-introduction-copy"><p>{scene.location}</p><h2>{scene.name}</h2><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id)} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id)} onFocus={() => preparePrimaryAmbientAudio(scene.id)} onPointerDown={() => preparePrimaryAmbientAudio(scene.id)} onTouchStart={() => preparePrimaryAmbientAudio(scene.id)}>Step Inside <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
       <button className="quiet-back" onClick={onBack}>← Back</button><p className="introduction-note">Nothing is required when you arrive.</p>
       <section className="scene-presence"><p>{scene.location}</p><span>{scene.description}</span><small>{scene.time} · {scene.weather}</small></section>
       <div className={`scene-controls ${controlsVisible ? "visible" : ""}`}><button aria-label={soundOn ? "Turn ambient sound off" : "Turn ambient sound on"} aria-pressed={soundOn} onClick={toggleSound}>{soundOn ? "Sound on" : "Sound off"}</button><SessionTimerControl session={activeSession} remainingMs={remainingMs} completed={completed} announcement={announcement} start={start} pause={pause} resume={resume} addTenMinutes={addTenMinutes} end={end} continueWithoutTimer={continueWithoutTimer} clearCompletion={clearCompletion} onLeave={leave} /><button aria-label="Toggle fullscreen" onClick={toggleFullscreen}>Fullscreen</button><button aria-label={`Leave ${scene.name}`} onClick={leave}>Leave</button></div>
