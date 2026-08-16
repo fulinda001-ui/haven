@@ -146,10 +146,13 @@ img { display: block; max-width: 100%; }
 .ambient-light-warm { background:radial-gradient(ellipse at 64% 50%,#f2d28c60 0,transparent 44%); opacity:.02; filter:blur(28px); animation:ambient-warmth 26s ease-in-out infinite; }
 .ambient-light-cool { background:radial-gradient(ellipse at 28% 42%,#59796e45 0,transparent 52%); opacity:.018; filter:blur(34px); animation:ambient-coolness 31s ease-in-out infinite; }
 .scene-grain { position: absolute; inset: 0; pointer-events: none; opacity: .12; background-image: radial-gradient(#ffffff 0.45px, transparent .65px); background-size: 5px 5px; mix-blend-mode: soft-light; }
-.scene-presence { position: absolute; top: clamp(28px, 5vw, 62px); left: clamp(28px, 5vw, 62px); max-width: min(460px, calc(100vw - 56px)); display: grid; gap: 12px; text-shadow: 0 1px 18px #06120bcc; }
-.scene-presence p { margin: 0; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; opacity: .84; }
-.scene-presence span { font: 500 clamp(26px, 3.5vw, 48px)/1.1 "Playfair Display", serif; letter-spacing: -.035em; }
-.scene-presence small { max-width: 330px; font-size: 13px; line-height: 1.5; opacity: .9; }
+.scene-presence { position: absolute; top: clamp(28px, 5vw, 62px); left: clamp(28px, 5vw, 62px); max-width: min(460px, calc(100vw - 56px)); display: grid; gap: 0; text-shadow: 0 1px 18px #06120bcc; }
+.scene-presence-location { margin: 0 0 9px; font-size: 10px; line-height: 1.55; letter-spacing: .16em; text-transform: uppercase; opacity: .68; }
+.scene-presence > span { font: 500 clamp(26px, 3.5vw, 48px)/1.1 "Playfair Display", serif; letter-spacing: -.035em; }
+.scene-presence small { max-width: 330px; font-size: 12px; line-height: 1.72; letter-spacing: .015em; opacity: .64; }
+.scene-presence-details { display:grid; gap:5px; margin-top:clamp(28px,4vh,44px); }
+.scene-whisper { position:absolute; z-index:2; right:clamp(48px,8vw,140px); bottom:clamp(112px,18vh,190px); max-width:min(330px,calc(100vw - 96px)); color:#fff; font:italic 400 13px/1.8 "Playfair Display",serif; letter-spacing:.005em; text-align:right; opacity:0; pointer-events:none; text-shadow:0 1px 18px #06120bcc; transition:opacity 1100ms cubic-bezier(.4,0,.3,1); }
+.scene-whisper.is-visible { opacity:.5; }
 .scene-controls { position: absolute; right: clamp(20px, 3vw, 42px); bottom: clamp(22px, 4vw, 42px); display: flex; gap: 8px; opacity: .28; transition: opacity 260ms ease; }
 .scene-controls:hover, .scene-controls.visible, .scene-controls:focus-within { opacity: 1; }
 .scene-controls button { padding: 9px 12px; border: 1px solid #ffffff66; background: #1521182e; color: #fff; font-size: 11px; backdrop-filter: blur(2px); }
@@ -170,6 +173,7 @@ img { display: block; max-width: 100%; }
 @media (max-width: 900px) { .mood-posters { grid-template-columns: repeat(2, 1fr); } .mood-poster { min-height: 390px; } .scene-poster-grid { grid-template-columns: 1fr; max-width: 620px; } .scene-poster { min-height: 0; } .scene-poster > .scene-poster-image { height: 350px; } .scene-introduction { grid-template-columns: 1fr; padding-top: 95px; gap: 36px; } .scene-introduction-image { height: 42vh; } .introduction-note { display: none; } }
 @media (max-width: 560px) { .escape-home { padding: 25px 16px 36px; gap: 42px; } .home-intro h1 { font-size: 48px; } .mood-posters { gap: 8px; } .mood-poster { min-height: 310px; } .poster-copy { inset: auto 14px 16px; } .poster-copy strong { font-size: 24px; } .poster-copy em { display: none; } .mood-collection { padding: 24px 16px 48px; } .mood-collection header { margin: 78px 0 35px; } .mood-collection h1 { font-size: 45px; } .scene-poster > .scene-poster-image { height: 290px; } .scene-introduction { padding: 82px 24px 32px; } .scene-introduction .quiet-back { top: 28px; left: 24px; } .scene-introduction-copy h1 { font-size: 48px; } .scene-atmosphere { flex-direction: column; gap: 8px; } .scene-controls { left: 16px; right: auto; bottom: 18px; } .scene-exists { display: none; } }
 .scene-stage{min-height:100svh;position:relative;overflow:hidden;background:#202a22;color:#fff;isolation:isolate}.scene-stage .scene-viewport{position:absolute;inset:0;z-index:-3;overflow:hidden}.scene-stage .camera-enter-leave{position:absolute;inset:-4%;will-change:transform;transform:scale(1) translate3d(0,0,0);transition:transform 2100ms cubic-bezier(.22,.61,.36,1)}.scene-stage.is-entering .camera-enter-leave{transform:scale(1.014) translate3d(1px,-2px,0)}.scene-stage.is-active .camera-enter-leave,.scene-stage.is-leaving .camera-enter-leave{transform:scale(1) translate3d(0,0,0)}.scene-stage.is-leaving .camera-enter-leave{transition-duration:1200ms}.scene-stage .camera-scale,.scene-stage .camera-drift-x,.scene-stage .camera-drift-y,.scene-stage .living-scene-image{position:absolute;inset:0}.scene-stage .camera-scale{will-change:transform;animation:camera-scale 47s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-x{will-change:transform;animation:camera-drift-x 61s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .camera-drift-y{will-change:transform;animation:camera-drift-y 73s cubic-bezier(.45,0,.55,1) infinite both}.scene-stage .living-scene-image{background:center/cover no-repeat}.scene-stage .ambient-light{z-index:-2}.scene-stage .scene-introduction-copy{position:absolute;z-index:1;left:clamp(28px,8vw,150px);bottom:clamp(72px,12vh,150px);max-width:min(560px,calc(100vw - 56px));color:#fff;text-shadow:0 2px 26px #071108b8}.scene-stage .scene-introduction-copy>p{color:#fff;opacity:.78}.scene-stage .scene-atmosphere{color:#fff;opacity:.82}.scene-stage .scene-atmosphere span+span{border-color:#ffffff66}.scene-stage .enter-scene{color:#fff}.scene-stage .quiet-back{position:absolute;z-index:2;top:clamp(28px,5vw,62px);left:clamp(28px,5vw,62px);color:#fff}.scene-stage .introduction-note{z-index:1;color:#fff;opacity:.8}.scene-stage .scene-presence,.scene-stage .scene-controls,.scene-stage .scene-exists{z-index:2;transition:opacity 520ms ease}.scene-stage.is-intro .scene-presence,.scene-stage.is-intro .scene-controls,.scene-stage.is-intro .scene-exists{opacity:0;pointer-events:none}.scene-stage.is-active .scene-introduction-copy,.scene-stage.is-active .quiet-back,.scene-stage.is-active .introduction-note{opacity:0;pointer-events:none;transition:opacity 420ms ease}.scene-stage.is-entering .scene-introduction-copy,.scene-stage.is-entering .quiet-back,.scene-stage.is-entering .introduction-note{opacity:0;transition:opacity 420ms ease}.scene-stage.is-entering .scene-presence,.scene-stage.is-entering .scene-controls,.scene-stage.is-entering .scene-exists{opacity:0}.scene-stage.is-entering .scene-transition-veil{opacity:.42;animation:veil-arrival 1800ms ease forwards}.scene-stage.is-leaving .scene-presence,.scene-stage.is-leaving .scene-controls,.scene-stage.is-leaving .scene-exists,.scene-stage.is-leaving .ambient-light{opacity:0}.scene-stage.is-leaving .scene-transition-veil{opacity:.48;transition:opacity 700ms ease 350ms}.scene-stage .scene-transition-veil{z-index:4}.scene-stage .scene-grain{z-index:-1}
+.scene-stage.is-entering .scene-whisper,.scene-stage.is-leaving .scene-whisper { opacity:0; }
 
 /* Scene entry remains one continuous frame: a brief, restrained departure
    from the landing composition before the existing full-scene expansion. */
@@ -208,6 +212,28 @@ img { display: block; max-width: 100%; }
 .scene-stage--hokkaido-cabin .hokkaido-hero-image { opacity:0; transition:opacity 420ms ease; }
 .scene-stage--hokkaido-cabin .hokkaido-hero-image.is-ready { opacity:1; }
 .scene-stage--hokkaido-cabin .hokkaido-hero-image.has-error { background:radial-gradient(ellipse at 63% 42%,#526b58 0%,#263329 62%); }
+
+/* Scene Motion presets affect only the photograph. UI and reusable Living
+   Layers remain outside this transform tree. */
+.scene-stage.scene-motion--cinematic-push-in.is-active .camera-scale { animation:scene-motion-cinematic-push var(--scene-motion-duration) linear forwards; transform-origin:center; will-change:transform; }
+.scene-stage.has-scene-motion.is-active .camera-drift-x,
+.scene-stage.has-scene-motion.is-active .camera-drift-y { animation:none; transform:none; }
+.scene-stage.has-scene-motion.is-active .living-scene-image { animation:none; transform:none; }
+.scene-stage.has-living-scene.is-active > .ambient-light { display:none; }
+.living-layer,
+.atmosphere-layer { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.living-layer { z-index:0; }
+.atmosphere-layer { z-index:1; }
+.living-nearby-leaf,
+.living-falling-leaf { position:absolute; display:block; height:calc(var(--nearby-leaf-width, var(--falling-leaf-width)) * .56); border-radius:100% 0 100% 0; background:linear-gradient(138deg,#486246cc 0%,#243a2dcc 78%); transform-origin:50% 50%; }
+.living-nearby-leaf { left:var(--nearby-leaf-left); top:var(--nearby-leaf-top); width:var(--nearby-leaf-width); opacity:var(--nearby-leaf-opacity); will-change:transform; animation:living-nearby-leaf-breeze var(--nearby-leaf-duration) cubic-bezier(.45,0,.55,1) var(--nearby-leaf-delay) infinite alternate both; }
+.living-falling-leaf { left:var(--falling-leaf-left); top:-3%; width:var(--falling-leaf-width); opacity:0; will-change:transform,opacity; animation:living-falling-leaf var(--falling-leaf-duration) cubic-bezier(.35,0,.6,1) both; }
+.atmosphere-effect { position:absolute; inset:-12%; display:block; pointer-events:none; }
+.atmosphere-effect--forest-haze { background:radial-gradient(ellipse at 61% 42%,#e9f0d92e 0%,#dfe9d417 35%,transparent 68%),linear-gradient(102deg,transparent 22%,#eef3df12 54%,transparent 78%); mix-blend-mode:screen; opacity:var(--atmosphere-opacity); will-change:transform,opacity; animation:living-forest-haze var(--atmosphere-duration) cubic-bezier(.45,0,.55,1) infinite alternate both; }
+@keyframes scene-motion-cinematic-push { from { transform:scale(var(--scene-motion-scale-from)); } to { transform:scale(var(--scene-motion-scale-to)); } }
+@keyframes living-nearby-leaf-breeze { 0% { transform:translate3d(var(--nearby-leaf-from-x),var(--nearby-leaf-from-y),0) rotate(var(--nearby-leaf-rotation)); } 48% { transform:translate3d(0,0,0) rotate(0deg); } 100% { transform:translate3d(var(--nearby-leaf-to-x),var(--nearby-leaf-to-y),0) rotate(var(--nearby-leaf-rotation)); } }
+@keyframes living-falling-leaf { 0% { opacity:0; transform:translate3d(0,-8px,0) rotate(0deg); } 12% { opacity:var(--falling-leaf-opacity); } 72% { opacity:var(--falling-leaf-opacity); } 100% { opacity:0; transform:translate3d(var(--falling-leaf-drift),var(--falling-leaf-distance),0) rotate(var(--falling-leaf-rotation)); } }
+@keyframes living-forest-haze { 0% { opacity:var(--atmosphere-opacity-low); transform:translate3d(-1.1%,.15%,0) scale(1.02); } 43% { opacity:var(--atmosphere-opacity); transform:translate3d(.15%,-.2%,0) scale(1.035); } 100% { opacity:var(--atmosphere-opacity-end); transform:translate3d(1.25%,.05%,0) scale(1.025); } }
 /* Iceland Black Beach Cabin is a completely static photograph in this phase. */
 .scene-stage--iceland-aurora-lodge .camera-scale,
 .scene-stage--iceland-aurora-lodge .camera-drift-x,
@@ -322,7 +348,9 @@ img { display: block; max-width: 100%; }
 .scene-stage.is-active.is-entering .finland-aurora-layer,
 .scene-stage.is-active.is-entering .kyoto-living-layer,
 .scene-stage.is-active.is-entering .swiss-mist-layer,
-.scene-stage.is-active.is-entering .bali-morning-layer { animation:scene-living-layer-arrival 520ms cubic-bezier(.4,0,.3,1) both; }
+.scene-stage.is-active.is-entering .bali-morning-layer,
+.scene-stage.is-active.is-entering .living-layer,
+.scene-stage.is-active.is-entering .atmosphere-layer { animation:scene-living-layer-arrival 520ms cubic-bezier(.4,0,.3,1) both; }
 @keyframes scene-living-layer-arrival { from { opacity:0; } to { opacity:1; } }
 @keyframes camera-scale{0%,100%{transform:scale(1.021)}22%{transform:scale(1.029)}49%{transform:scale(1.035)}71%{transform:scale(1.03)}}@keyframes camera-drift-x{0%,100%{transform:translate3d(1px,0,0)}19%{transform:translate3d(-4px,0,0)}46%{transform:translate3d(-1px,0,0)}74%{transform:translate3d(7px,0,0)}}@keyframes camera-drift-y{0%,100%{transform:translate3d(0,-1px,0)}31%{transform:translate3d(0,-6px,0)}58%{transform:translate3d(0,2px,0)}82%{transform:translate3d(0,-3px,0)}}
 
@@ -394,7 +422,7 @@ img { display: block; max-width: 100%; }
 @keyframes swiss-mist-shore-right { 0% { transform:translate3d(-5vw,0,0) scaleX(.98); opacity:.12; } 35% { transform:translate3d(-4.5vw,-.04vh,0) scaleX(.99); opacity:.145; } 67% { transform:translate3d(1vw,.11vh,0) scaleX(1.025); opacity:.125; } 100% { transform:translate3d(6vw,.18vh,0) scaleX(1.04); opacity:.14; } }
 @keyframes swiss-mist-lake-left { 0% { transform:translate3d(4vw,.2vh,0) scaleX(1.03); opacity:.065; } 32% { transform:translate3d(4.5vw,.18vh,0) scaleX(1.035); opacity:.09; } 70% { transform:translate3d(-2vw,-.08vh,0) scaleX(.98); opacity:.075; } 100% { transform:translate3d(-4vw,-.1vh,0) scaleX(.965); opacity:.085; } }
 @keyframes swiss-mist-lake-right { 0% { transform:translate3d(-4vw,.1vh,0) scaleX(.98); opacity:.055; } 28% { transform:translate3d(-3.5vw,.05vh,0) scaleX(.99); opacity:.075; } 61% { transform:translate3d(2vw,-.09vh,0) scaleX(1.015); opacity:.065; } 100% { transform:translate3d(5vw,-.16vh,0) scaleX(1.03); opacity:.075; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.camera-enter-leave{transform:none!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer,.bali-morning-layer{display:none}.scene-transition-veil{display:none} }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } .living-scene-image{transform:scale(1.032)!important}.scene-stage.has-scene-motion .living-scene-image{transform:none!important}.camera-enter-leave{transform:none!important}.camera-scale,.camera-drift-x,.camera-drift-y{animation:none!important}.ambient-light,.living-layer,.atmosphere-layer,.kyoto-living-layer,.swiss-mist-layer,.finland-aurora-layer,.bali-morning-layer{display:none}.scene-transition-veil{display:none} }
 
 @media (max-width: 780px) {
   .escape-home,.mood-collection,.your-world-page { padding:28px 22px; }
@@ -411,6 +439,10 @@ img { display: block; max-width: 100%; }
 }
 
 @media (max-width: 560px) {
+  .scene-presence { top:24px; left:20px; max-width:calc(100vw - 40px); }
+  .scene-presence-details { gap:3px; margin-top:24px; }
+  .scene-presence small { font-size:11px; line-height:1.68; }
+  .scene-whisper { right:20px; bottom:104px; max-width:min(250px,calc(100vw - 40px)); font-size:12px; line-height:1.75; }
   .world-marker--iceland .world-marker-name,
   .world-marker--norway .world-marker-name,
   .world-marker--finland .world-marker-name,

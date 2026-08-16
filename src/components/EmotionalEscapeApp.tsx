@@ -3,7 +3,7 @@
 import NextImage, { getImageProps } from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { flushSync } from "react-dom";
-import { moods, moodById, sceneById, scenesForMood, type Mood, type Scene } from "@/data/scenes";
+import { moods, moodById, sceneById, scenesForMood, type AtmosphereLayerConfig, type LivingLayerConfig, type Mood, type Scene } from "@/data/scenes";
 import { BALI_SUNRISE_DESTINATION_ID, markScenePlaceDiscovered } from "@/data/destinations";
 import { migrateHavenStorage } from "@/data/havenStorage";
 import { formatSessionTime, useHavenSession, type ActiveSession } from "@/hooks/useHavenSession";
@@ -17,6 +17,10 @@ const HOKKAIDO_SCENE_ID = "hokkaido-forest-cabin";
 const ICELAND_SCENE_ID = "iceland-aurora-lodge";
 const FINLAND_SCENE_ID = "finland-glass-cabin";
 const NORWEGIAN_FJORD_SCENE_ID = "norwegian-fjord-house";
+const WHISPER_REVEAL_MIN_MS = 12_000;
+const WHISPER_REVEAL_RANGE_MS = 3_000;
+const WHISPER_FADE_IN_MS = 1_100;
+const WHISPER_HOLD_MS = 5_000;
 type ImagePreparation = "ready" | "failed";
 const sceneImagePreparations = new Map<string, Promise<ImagePreparation>>();
 const sceneCardImagePreparations = new Map<string, Promise<ImagePreparation>>();
@@ -220,6 +224,89 @@ function BaliMorningLayer() {
   </div>;
 }
 
+function NearbyLeaves({ layer }: { layer: LivingLayerConfig }) {
+  return Array.from({ length: layer.count ?? 3 }, (_, index) => {
+    const seed = 170 + index * 19;
+    const duration = seededRange(seed, layer.durationSeconds[0], layer.durationSeconds[1]);
+    const left = index % 2 === 0 ? seededRange(seed + 1, 1, 14) : seededRange(seed + 1, 84, 97);
+    const style: KyotoStyle = {
+      "--nearby-leaf-left": `${left}%`,
+      "--nearby-leaf-top": `${seededRange(seed + 2, 8, 70)}%`,
+      "--nearby-leaf-width": `${seededRange(seed + 3, 22, 38)}px`,
+      "--nearby-leaf-opacity": `${layer.opacity * seededRange(seed + 4, 0.76, 1)}`,
+      "--nearby-leaf-duration": `${duration}s`,
+      "--nearby-leaf-delay": `${-seededRange(seed + 5, 0, duration)}s`,
+      "--nearby-leaf-from-x": `${layer.driftPixels * seededRange(seed + 6, -0.6, -0.25)}px`,
+      "--nearby-leaf-to-x": `${layer.driftPixels * seededRange(seed + 7, 0.35, 1)}px`,
+      "--nearby-leaf-from-y": `${seededRange(seed + 8, -0.8, 0.4)}px`,
+      "--nearby-leaf-to-y": `${seededRange(seed + 9, -0.4, 1)}px`,
+      "--nearby-leaf-rotation": `${seededRange(seed + 10, -2.2, 2.2)}deg`,
+    };
+    return <span key={index} className="living-nearby-leaf" style={style} />;
+  });
+}
+
+function OccasionalFallingLeaf({ layer }: { layer: LivingLayerConfig }) {
+  const [occurrence, setOccurrence] = useState(0);
+  const [active, setActive] = useState(false);
+  const intervalMin = layer.intervalSeconds?.[0] ?? 20;
+  const intervalMax = layer.intervalSeconds?.[1] ?? 40;
+
+  useEffect(() => {
+    if (active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const delay = (intervalMin + Math.random() * (intervalMax - intervalMin)) * 1000;
+    const timer = window.setTimeout(() => {
+      setOccurrence((current) => current + 1);
+      setActive(true);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [active, intervalMin, intervalMax]);
+
+  if (!active) return null;
+  const seed = 910 + occurrence * 23;
+  const duration = seededRange(seed, layer.durationSeconds[0], layer.durationSeconds[1]);
+  const style: KyotoStyle = {
+    "--falling-leaf-left": `${seededRange(seed + 1, 16, 84)}%`,
+    "--falling-leaf-width": `${seededRange(seed + 2, 10, 15)}px`,
+    "--falling-leaf-opacity": `${layer.opacity * seededRange(seed + 3, 0.78, 1)}`,
+    "--falling-leaf-duration": `${duration}s`,
+    "--falling-leaf-drift": `${layer.driftPixels * seededRange(seed + 4, -1, 1)}px`,
+    "--falling-leaf-distance": `${seededRange(seed + 5, 24, 42)}vh`,
+    "--falling-leaf-rotation": `${seededRange(seed + 6, 75, 145)}deg`,
+  };
+  return <span className="living-falling-leaf" style={style} onAnimationEnd={() => setActive(false)} />;
+}
+
+function LivingLayerEffect({ layer }: { layer: LivingLayerConfig }) {
+  if (layer.kind === "nearby-leaves") return <NearbyLeaves layer={layer} />;
+  if (layer.kind === "falling-leaf") return <OccasionalFallingLeaf layer={layer} />;
+  return null;
+}
+
+function AtmosphereLayer({ layer }: { layer: AtmosphereLayerConfig }) {
+  const style: KyotoStyle = {
+    "--atmosphere-opacity": `${layer.opacity}`,
+    "--atmosphere-opacity-low": `${layer.opacity * 0.78}`,
+    "--atmosphere-opacity-end": `${layer.opacity * 0.9}`,
+    "--atmosphere-duration": `${layer.durationSeconds}s`,
+  };
+  return <span className={`atmosphere-effect atmosphere-effect--${layer.kind}`} style={style} />;
+}
+
+function LivingLayerSystem({ scene }: { scene: Scene }) {
+  const config = scene.livingScene;
+  if (!config) return null;
+
+  return <>
+    <div className="living-layer" aria-hidden="true">
+      {config.livingLayers.map((layer, index) => <LivingLayerEffect key={`${layer.kind}-${index}`} layer={layer} />)}
+    </div>
+    <div className="atmosphere-layer" aria-hidden="true">
+      {config.atmosphereLayers.map((layer, index) => <AtmosphereLayer key={`${layer.kind}-${index}`} layer={layer} />)}
+    </div>
+  </>;
+}
+
 type ProgressiveCardImageProps = {
   src: string;
   alt: string;
@@ -394,6 +481,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
   const [leaving, setLeaving] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(false);
+  const [whisperVisible, setWhisperVisible] = useState(false);
   const [sharedFrameStyle, setSharedFrameStyle] = useState<CSSProperties | undefined>();
   const stageRef = useRef<HTMLElement>(null);
   const sharedFrameRef = useRef<HTMLDivElement>(null);
@@ -417,6 +505,23 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
     setLeaving(false);
     setLivingLayersReady(false);
   }, [mode]);
+
+  useEffect(() => {
+    setWhisperVisible(false);
+    if (mode !== "active" || leaving) return;
+
+    let hideTimer: number | undefined;
+    const revealDelay = WHISPER_REVEAL_MIN_MS + Math.random() * WHISPER_REVEAL_RANGE_MS;
+    const revealTimer = window.setTimeout(() => {
+      setWhisperVisible(true);
+      hideTimer = window.setTimeout(() => setWhisperVisible(false), WHISPER_FADE_IN_MS + WHISPER_HOLD_MS);
+    }, revealDelay);
+
+    return () => {
+      window.clearTimeout(revealTimer);
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+    };
+  }, [leaving, mode, scene.id]);
 
   useEffect(() => {
     if (!isHokkaidoCabin) return;
@@ -580,11 +685,33 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
 
   const hokkaidoHeroReady = !isHokkaidoCabin || preparedHokkaidoImage === scene.backgroundImage;
   const hokkaidoHeroFailed = isHokkaidoCabin && failedHokkaidoImage === scene.backgroundImage;
-
+  const livingScene = scene.livingScene;
+  const hasLivingSceneLayers = Boolean(livingScene && (livingScene.livingLayers.length > 0 || livingScene.atmosphereLayers.length > 0));
+  const showLivingSceneLayers = Boolean(hasLivingSceneLayers && mode === "active" && (livingLayersReady || !entering) && (!isHokkaidoCabin || hokkaidoHeroReady));
+  const sceneMotion = scene.motion;
+  const sceneMotionStyle: KyotoStyle | undefined = sceneMotion ? {
+    "--scene-motion-scale-from": `${sceneMotion.scaleFrom}`,
+    "--scene-motion-scale-to": `${sceneMotion.scaleTo}`,
+    "--scene-motion-duration": `${sceneMotion.durationSeconds}s`,
+  } : undefined;
   return (
-    <main ref={stageRef} className={`scene-stage ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${isNewZealandMountainCabin ? "scene-stage--new-zealand-mountain-cabin" : ""} ${isCaliforniaCoastalMorning ? "scene-stage--california-coastal-morning" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${pressingEnter ? "is-pressing-enter" : ""} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
+    <main ref={stageRef} style={sceneMotionStyle} className={`scene-stage ${sceneMotion ? "has-scene-motion" : ""} ${sceneMotion ? `scene-motion--${sceneMotion.kind}` : ""} ${livingScene ? "has-living-scene" : ""} ${isHokkaidoCabin ? "scene-stage--hokkaido-cabin" : ""} ${isIcelandAuroraLodge ? "scene-stage--iceland-aurora-lodge" : ""} ${isFinlandGlassCabin ? "scene-stage--finland-glass-cabin" : ""} ${isNorwegianFjordHouse ? "scene-stage--norwegian-fjord-house" : ""} ${isTuscanySummerVilla ? "scene-stage--tuscany-summer-villa" : ""} ${isProvenceKitchen ? "scene-stage--provence-kitchen" : ""} ${isSeoulRooftopSunset ? "scene-stage--seoul-rooftop-sunset" : ""} ${isKyotoRainyCafe ? "scene-stage--kyoto-rainy-cafe" : ""} ${isSwissLakes ? "scene-stage--swiss-lakes" : ""} ${isBaliSunriseHouse ? "scene-stage--bali-sunrise-house" : ""} ${isNewZealandMountainCabin ? "scene-stage--new-zealand-mountain-cabin" : ""} ${isCaliforniaCoastalMorning ? "scene-stage--california-coastal-morning" : ""} ${mode === "active" ? "is-active" : "is-intro"} ${pressingEnter ? "is-pressing-enter" : ""} ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`} onMouseMove={() => setControlsVisible(true)} onMouseLeave={() => setControlsVisible(false)} onFocus={() => setControlsVisible(true)}>
       <AmbientAudio ref={ambientAudioRef} sceneId={scene.id} />
-      <div className="scene-viewport" aria-hidden="true"><div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}><div className="camera-enter-leave"><div className="camera-scale"><div className="camera-drift-x"><div className="camera-drift-y"><div className={`living-scene-image ${isHokkaidoCabin ? "hokkaido-hero-image" : ""} ${hokkaidoHeroReady ? "is-ready" : "is-pending"} ${hokkaidoHeroFailed ? "has-error" : ""}`} style={hokkaidoHeroReady ? { backgroundImage: `url(${scene.backgroundImage})` } : undefined} /></div></div></div></div></div><div className="scene-entry-shade" /></div>
+      <div className="scene-viewport" aria-hidden="true">
+        <div ref={sharedFrameRef} className="shared-scene-frame" style={sharedFrameStyle}>
+          <div className="camera-enter-leave">
+            <div className="camera-scale">
+              <div className="camera-drift-x">
+                <div className="camera-drift-y">
+                  <div className={`living-scene-image ${isHokkaidoCabin ? "hokkaido-hero-image" : ""} ${hokkaidoHeroReady ? "is-ready" : "is-pending"} ${hokkaidoHeroFailed ? "has-error" : ""}`} style={hokkaidoHeroReady ? { backgroundImage: `url(${scene.backgroundImage})` } : undefined} />
+                </div>
+              </div>
+            </div>
+          </div>
+          {showLivingSceneLayers && <LivingLayerSystem scene={scene} />}
+          <div className="scene-entry-shade" />
+        </div>
+      </div>
       <div className="ambient-light ambient-light-warm" aria-hidden="true" /><div className="ambient-light ambient-light-cool" aria-hidden="true" /><div className="scene-grain" aria-hidden="true" />
       {isFinlandGlassCabin && mode === "active" && livingLayersReady && <FinlandAuroraLayer />}
       {isKyotoRainyCafe && mode === "active" && livingLayersReady && <KyotoLivingLayer />}
@@ -592,7 +719,15 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       {isBaliSunriseHouse && mode === "active" && livingLayersReady && <BaliMorningLayer />}
       <section className="scene-introduction-copy"><p>{scene.location}</p><h2>{scene.name}</h2><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id)} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id)} onFocus={() => preparePrimaryAmbientAudio(scene.id)} onPointerDown={() => preparePrimaryAmbientAudio(scene.id)} onTouchStart={() => preparePrimaryAmbientAudio(scene.id)}>Step Inside <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
       <button className="quiet-back" onClick={onBack}>← Back</button><p className="introduction-note">Nothing is required when you arrive.</p>
-      <section className="scene-presence"><p>{scene.location}</p><span>{scene.description}</span><small>{scene.time} · {scene.weather}</small></section>
+      <section className="scene-presence">
+        <p className="scene-presence-location">{scene.location}</p>
+        <span>{scene.name}</span>
+        <div className="scene-presence-details">
+          <small>{scene.scenePresence.timeOfDay}</small>
+          <small>{scene.scenePresence.atmosphere}</small>
+        </div>
+      </section>
+      <aside className={`scene-whisper ${whisperVisible ? "is-visible" : ""}`} aria-hidden={!whisperVisible}>{scene.scenePresence.whisper}</aside>
       <div className={`scene-controls ${controlsVisible ? "visible" : ""}`}><button aria-label={soundOn ? "Turn ambient sound off" : "Turn ambient sound on"} aria-pressed={soundOn} onClick={toggleSound}>{soundOn ? "Sound on" : "Sound off"}</button><SessionTimerControl session={activeSession} remainingMs={remainingMs} completed={completed} announcement={announcement} start={start} pause={pause} resume={resume} addTenMinutes={addTenMinutes} end={end} continueWithoutTimer={continueWithoutTimer} clearCompletion={clearCompletion} onLeave={leave} /><button aria-label="Toggle fullscreen" onClick={toggleFullscreen}>Fullscreen</button><button aria-label={`Leave ${scene.name}`} onClick={leave}>Leave</button></div>
       <p className="scene-exists">You can simply exist here.</p><div className="scene-transition-veil" aria-hidden="true"><span>Entering</span></div>
     </main>
