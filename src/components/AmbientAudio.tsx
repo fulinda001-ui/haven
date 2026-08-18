@@ -23,23 +23,27 @@ type PreparedPrimaryAudio = {
 
 const AUDIO = {
   base: "/scenes/hokkaido-cabin/audio/ambient.mp3",
-  birds: "/scenes/hokkaido-cabin/audio/mixkit-forest-birds-ambience-1210.wav",
+  birds: "/scenes/hokkaido-cabin/audio/forest-birds-ambience.m4a",
   breeze: "/scenes/hokkaido-cabin/audio/dbsound-light-breeze-through-cabin-slats-327161.mp3",
 } as const;
 
-const KYOTO_RAIN_AUDIO = "/scenes/kyoto-rainy-cafe/audio/rain.wav";
+const KYOTO_RAIN_AUDIO = "/scenes/kyoto-rainy-cafe/audio/rain.m4a";
 const KYOTO_CUP_AUDIO = "/scenes/kyoto-rainy-cafe/audio/cup-and-saucer.mp3";
 const KYOTO_CUP_INTERVAL = { minimum: 90000, maximum: 240000 } as const;
 const KYOTO_PAGE_TURN_AUDIO = "/scenes/kyoto-rainy-cafe/audio/page-turn.mp3";
 const KYOTO_PAGE_TURN_INTERVAL = { minimum: 70000, maximum: 190000 } as const;
 const KYOTO_CHAIR_AUDIO = "/scenes/kyoto-rainy-cafe/audio/chair-creak.mp3";
 const KYOTO_CHAIR_INTERVAL = { minimum: 180000, maximum: 420000 } as const;
-const SWISS_LAKES_AMBIENCE = "/scenes/swiss-lakes/audio/morning-ambience.wav";
+const SWISS_LAKES_AMBIENCE = "/scenes/swiss-lakes/audio/morning-ambience.m4a";
 const SWISS_LAKES_WATER = "/scenes/swiss-lakes/audio/lake-wavelets.mp3";
 const ICELAND_OCEAN_AUDIO = "/scenes/iceland-aurora-lodge/audio/atlantic-ocean.mp3";
-const ICELAND_OCEAN_BASE_VOLUME = 0.22;
+// Heard from inside the cabin: present enough to identify the Atlantic, but
+// far enough behind the nearby fireplace to preserve the sheltered viewpoint.
+const ICELAND_OCEAN_BASE_VOLUME = 0.145;
+const ICELAND_OCEAN_FILTER_FREQUENCY = 4200;
+const ICELAND_OCEAN_FILTER_Q = 0.5;
 const ICELAND_FIREPLACE_AUDIO = "/scenes/iceland-aurora-lodge/audio/indoor-fireplace.mp3";
-// The Atlantic remains the identity of Iceland; the fire is only a sheltered indoor detail.
+// The fireplace is the nearby indoor detail while the Atlantic remains outside.
 const ICELAND_FIREPLACE_BASE_VOLUME = 0.07;
 const PROVENCE_GARDEN_AUDIO = "/scenes/provence-kitchen/audio/garden-ambience.mp3";
 // A slightly quieter bed leaves the garden details present without the outdoor air taking over.
@@ -78,16 +82,55 @@ const FINLAND_FIREPLACE_BASE_VOLUME = 0.3;
 const FINLAND_WIND_AUDIO = "/scenes/finland-glass-cabin/audio/outside-wind.mp3";
 // About 10 dB below the fireplace: audible as a distant exterior layer, never foreground.
 const FINLAND_WIND_BASE_VOLUME = 0.03;
-const NORWEGIAN_FJORD_WATER_AUDIO = "/scenes/norwegian-fjord-house/audio/fjord-water.mp3";
-const NORWEGIAN_FJORD_WATER_BASE_VOLUME = 0.16;
+const NORWEGIAN_CABIN_SOUNDSCAPE_AUDIO = "/scenes/norwegian-fjord-house/audio/norwegian-cabin-soundscape.m4a";
+// The listener is elevated and indoors; the fjord should be almost forgotten.
+const NORWEGIAN_CABIN_SOUNDSCAPE_BASE_VOLUME = 0.075;
+const NORWEGIAN_CABIN_FILTER_FREQUENCY = 3200;
+const NORWEGIAN_CABIN_FILTER_Q = 0.45;
+const NORWEGIAN_FERRY_HORN_AUDIO = "/scenes/norwegian-fjord-house/audio/distant-ferry-horn.m4a";
+const NORWEGIAN_FERRY_HORN_VOLUME = 0.11;
+const NORWEGIAN_FERRY_HORN_FILTER_FREQUENCY = 3400;
+const NORWEGIAN_FERRY_HORN_FILTER_Q = 0.45;
+const NORWEGIAN_FERRY_HORN_FIRST_INTERVAL = { minimum: 35 * 1000, maximum: 70 * 1000 } as const;
+const NORWEGIAN_FERRY_HORN_REPEAT_INTERVAL = { minimum: 3 * 60 * 1000, maximum: 6 * 60 * 1000 } as const;
+const NORWEGIAN_FERRY_HORN_PREPARE_LEAD_MS = 5000;
+const NORWEGIAN_FERRY_HORN_AUDIBLE_OFFSET_MS = 4200;
 const NEW_ZEALAND_HOT_SPRING_AUDIO = "/scenes/new-zealand-mountain-cabin/audio/hot-spring-water.mp3";
-const NEW_ZEALAND_HOT_SPRING_BASE_VOLUME = 0.14;
+// Nearby water remains tactile, but silence now carries the scale of the alpine landscape.
+const NEW_ZEALAND_HOT_SPRING_BASE_VOLUME = 0.09;
 const NEW_ZEALAND_HOT_SPRING_DURATION_SECONDS = 60.456;
 const NEW_ZEALAND_HOT_SPRING_CROSSFADE_SECONDS = 8;
-const CALIFORNIA_COASTAL_WAVES_AUDIO = "/scenes/california-coastal-morning/audio/coastal-waves.wav";
-const CALIFORNIA_COASTAL_WAVES_BASE_VOLUME = 0.11;
+const NEW_ZEALAND_HOT_SPRING_HIGH_PASS_FREQUENCY = 65;
+const NEW_ZEALAND_HOT_SPRING_HIGH_PASS_Q = 0.7;
+const NEW_ZEALAND_HOT_SPRING_LOW_SHELF_FREQUENCY = 120;
+const NEW_ZEALAND_HOT_SPRING_LOW_SHELF_GAIN_DB = -2;
+const NEW_ZEALAND_HOT_SPRING_STEREO_PAN = -0.08;
+const NEW_ZEALAND_TUSSOCK_AUDIO = "/scenes/new-zealand-mountain-cabin/audio/alpine-tussock-breeze.m4a";
+const NEW_ZEALAND_TUSSOCK_VOLUME = 0.12;
+const NEW_ZEALAND_TUSSOCK_FIRST_INTERVAL = { minimum: 25 * 1000, maximum: 50 * 1000 } as const;
+const NEW_ZEALAND_TUSSOCK_REPEAT_INTERVAL = { minimum: 2 * 60 * 1000, maximum: 5 * 60 * 1000 } as const;
+const NEW_ZEALAND_TUSSOCK_PREPARE_LEAD_MS = 5000;
+// The source begins with about 2.8 seconds of intentional silence. Scheduling
+// accounts for it so the audible grass movement still lands inside the range.
+const NEW_ZEALAND_TUSSOCK_AUDIBLE_OFFSET_MS = 2800;
+const CALIFORNIA_COASTAL_WAVES_AUDIO = "/scenes/california-coastal-morning/audio/coastal-waves.m4a";
+// The listener is high above the coastline: silence carries the height while
+// the surf remains a distant environmental reference far below.
+const CALIFORNIA_COASTAL_WAVES_BASE_VOLUME = 0.06;
 const CALIFORNIA_COASTAL_WAVES_DURATION_SECONDS = 169.5;
 const CALIFORNIA_COASTAL_WAVES_CROSSFADE_SECONDS = 10;
+const CALIFORNIA_COASTAL_WAVES_LOW_SHELF_FREQUENCY = 180;
+const CALIFORNIA_COASTAL_WAVES_LOW_SHELF_GAIN_DB = -3;
+const CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_FREQUENCY = 2200;
+const CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_Q = 0.7;
+const CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_GAIN_DB = -2;
+const CALIFORNIA_RIDGE_BIRD_AUDIO = "/scenes/california-coastal-morning/audio/distant-ridge-bird.m4a";
+const CALIFORNIA_RIDGE_BIRD_VOLUME = 0.12;
+const CALIFORNIA_RIDGE_BIRD_FIRST_INTERVAL = { minimum: 35 * 1000, maximum: 70 * 1000 } as const;
+const CALIFORNIA_RIDGE_BIRD_REPEAT_INTERVAL = { minimum: 4 * 60 * 1000, maximum: 8 * 60 * 1000 } as const;
+const CALIFORNIA_RIDGE_BIRD_PREPARE_LEAD_MS = 5000;
+// The selected source event has about 3.1 seconds of quiet before the call.
+const CALIFORNIA_RIDGE_BIRD_AUDIBLE_OFFSET_MS = 3100;
 const BALI_MORNING_AUDIO = "/scenes/bali-sunrise-house/audio/morning-garden.mp3";
 const BALI_MORNING_BASE_VOLUME = 0.16;
 const BALI_TEMPLE_BELL_AUDIO = "/scenes/bali-sunrise-house/audio/temple-bell-single.m4a";
@@ -96,6 +139,9 @@ const BALI_TEMPLE_BELL_AUDIO = "/scenes/bali-sunrise-house/audio/temple-bell-sin
 const BALI_TEMPLE_BELL_VOLUME = 0.08;
 const BALI_TEMPLE_BELL_FIRST_DELAY_MS = 2500;
 const BALI_TEMPLE_BELL_REPEAT_INTERVAL = { minimum: 10 * 60 * 1000, maximum: 15 * 60 * 1000 } as const;
+const HOKKAIDO_SECONDARY_PREPARE_LEAD_MS = 5000;
+
+export type PrimaryAudioPreparationIntent = "preview" | "committed";
 
 const PRIMARY_AUDIO_BY_SCENE_ID: Record<string, string> = {
   "hokkaido-forest-cabin": AUDIO.base,
@@ -103,7 +149,7 @@ const PRIMARY_AUDIO_BY_SCENE_ID: Record<string, string> = {
   "swiss-lakeside-morning": SWISS_LAKES_AMBIENCE,
   "iceland-aurora-lodge": ICELAND_OCEAN_AUDIO,
   "finland-glass-cabin": FINLAND_FIREPLACE_AUDIO,
-  "norwegian-fjord-house": NORWEGIAN_FJORD_WATER_AUDIO,
+  "norwegian-fjord-house": NORWEGIAN_CABIN_SOUNDSCAPE_AUDIO,
   "tuscany-summer-villa": TUSCANY_TOWN_AUDIO,
   "provence-kitchen": PROVENCE_GARDEN_AUDIO,
   "seoul-rooftop-sunset": SEOUL_CITY_AMBIENCE_AUDIO,
@@ -125,14 +171,22 @@ function releaseAudioElement(audio: HTMLAudioElement) {
  * Network/media preparation only. This function deliberately never calls
  * play(), never creates/resumes an AudioContext, and never schedules events.
  */
-export function preparePrimaryAmbientAudio(sceneId: string) {
+export function preparePrimaryAmbientAudio(sceneId: string, intent: PrimaryAudioPreparationIntent = "preview") {
   if (typeof window === "undefined") return;
   const source = PRIMARY_AUDIO_BY_SCENE_ID[sceneId];
-  if (!source || preparedPrimaryAudio?.sceneId === sceneId) return;
+  if (!source) return;
+  const preload = intent === "committed" ? "auto" : "metadata";
+  if (preparedPrimaryAudio?.sceneId === sceneId) {
+    if (preload === "auto" && preparedPrimaryAudio.audio.preload !== "auto") {
+      preparedPrimaryAudio.audio.preload = "auto";
+      preparedPrimaryAudio.audio.load();
+    }
+    return;
+  }
   if (preparedPrimaryAudio) releaseAudioElement(preparedPrimaryAudio.audio);
 
   const audio = new Audio();
-  audio.preload = "auto";
+  audio.preload = preload;
   audio.muted = false;
   audio.volume = 0;
   audio.setAttribute("aria-hidden", "true");
@@ -209,12 +263,16 @@ class HokkaidoSoundscape {
     return audio;
   }
 
+  private createDeferredLayerPlayer() {
+    return createDeferredStandbyAudio();
+  }
+
   ensure() {
     if (!this.players) {
       this.players = {
         base: this.createPlayer(AUDIO.base, true, "hokkaido-forest-cabin"),
-        birds: this.createPlayer(AUDIO.birds),
-        breeze: this.createPlayer(AUDIO.breeze),
+        birds: this.createDeferredLayerPlayer(),
+        breeze: this.createDeferredLayerPlayer(),
       };
     }
     return this.players;
@@ -276,9 +334,18 @@ class HokkaidoSoundscape {
   }
 
   private scheduleLayer(layer: LayerName, delay: number) {
+    if (!this.players) return;
+    const audio = layer === "birds" ? this.players.birds : this.players.breeze;
+    const source = layer === "birds" ? AUDIO.birds : AUDIO.breeze;
+    if (!audio.getAttribute("src")) {
+      const prepareAfter = Math.max(1000, delay - HOKKAIDO_SECONDARY_PREPARE_LEAD_MS);
+      this.schedule(() => {
+        if (this.running) prepareStandbyAudio(audio, source);
+      }, prepareAfter);
+    }
     this.schedule(() => {
       if (!this.running || !this.players) return;
-      const audio = layer === "birds" ? this.players.birds : this.players.breeze;
+      if (!audio.getAttribute("src")) prepareStandbyAudio(audio, source);
       const target = layer === "birds" ? 0.23 : 0.16;
       const fadeIn = layer === "birds" ? randomBetween(2200, 3600) : randomBetween(2600, 4000);
       const fadeOut = layer === "birds" ? randomBetween(3200, 4800) : randomBetween(3600, 5000);
@@ -700,6 +767,9 @@ class IcelandAuroraSoundscape {
   private oceanPlayer: HTMLAudioElement | null = null;
   private fireplacePlayer: HTMLAudioElement | null = null;
   private fadeFrames = new Map<HTMLAudioElement, number>();
+  private oceanContext: AudioContext | null = null;
+  private oceanSource: MediaElementAudioSourceNode | null = null;
+  private oceanFilter: BiquadFilterNode | null = null;
   private running = false;
 
   private createPlayer(source: string, primarySceneId?: string) {
@@ -717,7 +787,19 @@ class IcelandAuroraSoundscape {
 
   private ensureOcean() {
     if (!this.oceanPlayer) this.oceanPlayer = this.createPlayer(ICELAND_OCEAN_AUDIO, "iceland-aurora-lodge");
+    this.ensureOceanFilter();
     return this.oceanPlayer;
+  }
+
+  private ensureOceanFilter() {
+    if (this.oceanSource || !this.oceanPlayer || typeof window === "undefined" || !window.AudioContext) return;
+    this.oceanContext = new window.AudioContext();
+    this.oceanSource = this.oceanContext.createMediaElementSource(this.oceanPlayer);
+    this.oceanFilter = this.oceanContext.createBiquadFilter();
+    this.oceanFilter.type = "lowpass";
+    this.oceanFilter.frequency.value = ICELAND_OCEAN_FILTER_FREQUENCY;
+    this.oceanFilter.Q.value = ICELAND_OCEAN_FILTER_Q;
+    this.oceanSource.connect(this.oceanFilter).connect(this.oceanContext.destination);
   }
 
   private ensureFireplace() {
@@ -767,6 +849,7 @@ class IcelandAuroraSoundscape {
     ocean.muted = false;
     fireplace.loop = true;
     fireplace.muted = false;
+    if (this.oceanContext?.state === "suspended") void this.oceanContext.resume();
     this.fade(ocean, ICELAND_OCEAN_BASE_VOLUME, 2000);
     void fireplace.play().then(() => this.fade(fireplace, ICELAND_FIREPLACE_BASE_VOLUME, 2000)).catch(() => {});
   }
@@ -786,6 +869,7 @@ class IcelandAuroraSoundscape {
     ocean.muted = false;
     fireplace.loop = true;
     fireplace.muted = false;
+    if (this.oceanContext?.state === "suspended") void this.oceanContext.resume();
     void ocean.play().then(() => this.fade(ocean, ICELAND_OCEAN_BASE_VOLUME, 850)).catch(() => {});
     void fireplace.play().then(() => this.fade(fireplace, ICELAND_FIREPLACE_BASE_VOLUME, 850)).catch(() => {});
   }
@@ -806,8 +890,14 @@ class IcelandAuroraSoundscape {
       audio.volume = 0;
       audio.remove();
     });
+    this.oceanSource?.disconnect();
+    this.oceanFilter?.disconnect();
+    if (this.oceanContext) void this.oceanContext.close();
     this.oceanPlayer = null;
     this.fireplacePlayer = null;
+    this.oceanContext = null;
+    this.oceanSource = null;
+    this.oceanFilter = null;
   }
 }
 
@@ -1920,11 +2010,21 @@ class SeoulCitySoundscape {
 class NorwegianFjordSoundscape {
   private player: HTMLAudioElement | null = null;
   private fadeFrame: number | null = null;
+  private context: AudioContext | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
+  private filter: BiquadFilterNode | null = null;
+  private hornPlayer: HTMLAudioElement | null = null;
+  private hornSource: MediaElementAudioSourceNode | null = null;
+  private hornFilter: BiquadFilterNode | null = null;
+  private hornPrepareTimer: ReturnType<typeof setTimeout> | null = null;
+  private hornPlaybackTimer: ReturnType<typeof setTimeout> | null = null;
+  private hornFadeFrame: number | null = null;
+  private hornPlaying = false;
   private running = false;
 
   private ensure() {
     if (!this.player) {
-      const audio = acquirePrimaryAudio("norwegian-fjord-house", NORWEGIAN_FJORD_WATER_AUDIO);
+      const audio = acquirePrimaryAudio("norwegian-fjord-house", NORWEGIAN_CABIN_SOUNDSCAPE_AUDIO);
       audio.preload = "auto";
       audio.loop = true;
       audio.muted = false;
@@ -1935,10 +2035,152 @@ class NorwegianFjordSoundscape {
       if (audio.readyState === HTMLMediaElement.HAVE_NOTHING) audio.load();
       this.player = audio;
     }
+    this.ensureFilter();
     return this.player;
   }
 
+  private ensureFilter() {
+    if (this.source || !this.player || typeof window === "undefined" || !window.AudioContext) return;
+    this.context = new window.AudioContext();
+    this.source = this.context.createMediaElementSource(this.player);
+    this.filter = this.context.createBiquadFilter();
+    this.filter.type = "lowpass";
+    this.filter.frequency.value = NORWEGIAN_CABIN_FILTER_FREQUENCY;
+    this.filter.Q.value = NORWEGIAN_CABIN_FILTER_Q;
+    this.source.connect(this.filter).connect(this.context.destination);
+  }
+
+  private ensureHorn() {
+    if (!this.hornPlayer) {
+      const audio = createDeferredStandbyAudio();
+      audio.onended = () => {
+        this.hornPlaying = false;
+        audio.volume = 0;
+        audio.currentTime = 0;
+        if (this.running) {
+          this.scheduleHorn(randomBetween(
+            NORWEGIAN_FERRY_HORN_REPEAT_INTERVAL.minimum,
+            NORWEGIAN_FERRY_HORN_REPEAT_INTERVAL.maximum,
+          ));
+        }
+      };
+      this.hornPlayer = audio;
+    }
+
+    if (!this.hornSource && this.context) {
+      this.hornSource = this.context.createMediaElementSource(this.hornPlayer);
+      this.hornFilter = this.context.createBiquadFilter();
+      this.hornFilter.type = "lowpass";
+      this.hornFilter.frequency.value = NORWEGIAN_FERRY_HORN_FILTER_FREQUENCY;
+      this.hornFilter.Q.value = NORWEGIAN_FERRY_HORN_FILTER_Q;
+      this.hornSource.connect(this.hornFilter).connect(this.context.destination);
+    }
+
+    return this.hornPlayer;
+  }
+
+  private clearHornTimers() {
+    if (this.hornPrepareTimer !== null) clearTimeout(this.hornPrepareTimer);
+    if (this.hornPlaybackTimer !== null) clearTimeout(this.hornPlaybackTimer);
+    this.hornPrepareTimer = null;
+    this.hornPlaybackTimer = null;
+  }
+
+  private cancelHornFade() {
+    if (this.hornFadeFrame !== null) cancelAnimationFrame(this.hornFadeFrame);
+    this.hornFadeFrame = null;
+  }
+
+  private fadeHorn(target: number, duration: number, done?: () => void) {
+    if (!this.hornPlayer) { done?.(); return; }
+    this.cancelHornFade();
+    const audio = this.hornPlayer;
+    const from = audio.volume;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - began) / duration);
+      const eased = progress * progress * (3 - 2 * progress);
+      audio.volume = from + (target - from) * eased;
+      if (progress < 1) this.hornFadeFrame = requestAnimationFrame(tick);
+      else { this.hornFadeFrame = null; done?.(); }
+    };
+    this.hornFadeFrame = requestAnimationFrame(tick);
+  }
+
+  private releaseHorn() {
+    this.cancelHornFade();
+    this.hornPlaying = false;
+    this.hornSource?.disconnect();
+    this.hornFilter?.disconnect();
+    this.hornSource = null;
+    this.hornFilter = null;
+    if (this.hornPlayer) {
+      this.hornPlayer.onended = null;
+      releaseAudioElement(this.hornPlayer);
+      this.hornPlayer = null;
+    }
+  }
+
+  private stopHorn(release: boolean, fadeMs = 900) {
+    this.clearHornTimers();
+    if (!this.hornPlayer) return;
+    const finish = () => {
+      if (!this.hornPlayer) return;
+      this.hornPlayer.pause();
+      this.hornPlayer.currentTime = 0;
+      this.hornPlayer.volume = 0;
+      this.hornPlaying = false;
+      if (release) this.releaseHorn();
+    };
+    if (this.hornPlaying && !this.hornPlayer.paused && this.hornPlayer.volume > 0) {
+      this.fadeHorn(0, fadeMs, finish);
+    } else {
+      finish();
+    }
+  }
+
+  private playHorn() {
+    this.hornPlaybackTimer = null;
+    if (!this.running || this.hornPlaying) return;
+    const horn = this.ensureHorn();
+    if (!horn.getAttribute("src")) prepareStandbyAudio(horn, NORWEGIAN_FERRY_HORN_AUDIO);
+    horn.loop = false;
+    horn.muted = false;
+    horn.currentTime = 0;
+    horn.volume = NORWEGIAN_FERRY_HORN_VOLUME;
+    this.hornPlaying = true;
+    if (this.context?.state === "suspended") void this.context.resume();
+    void horn.play().catch(() => {
+      this.hornPlaying = false;
+      horn.volume = 0;
+      if (this.running) {
+        this.scheduleHorn(randomBetween(
+          NORWEGIAN_FERRY_HORN_REPEAT_INTERVAL.minimum,
+          NORWEGIAN_FERRY_HORN_REPEAT_INTERVAL.maximum,
+        ));
+      }
+    });
+  }
+
+  private scheduleHorn(audibleDelayMs: number) {
+    this.clearHornTimers();
+    if (!this.running) return;
+    const horn = this.ensureHorn();
+    const playbackDelayMs = Math.max(0, audibleDelayMs - NORWEGIAN_FERRY_HORN_AUDIBLE_OFFSET_MS);
+    const prepareDelayMs = Math.max(0, playbackDelayMs - NORWEGIAN_FERRY_HORN_PREPARE_LEAD_MS);
+
+    this.hornPrepareTimer = setTimeout(() => {
+      this.hornPrepareTimer = null;
+      if (this.running && !horn.getAttribute("src")) prepareStandbyAudio(horn, NORWEGIAN_FERRY_HORN_AUDIO);
+    }, prepareDelayMs);
+    this.hornPlaybackTimer = setTimeout(() => this.playHorn(), playbackDelayMs);
+  }
+
   getAmbientAudio() {
+    // Re-entry intent may have prepared a fresh primary element while this
+    // soundscape still owns its paused base player. Discard only that unused
+    // duplicate and continue with the existing player.
+    if (this.player) releasePreparedPrimaryAmbientAudio("norwegian-fjord-house");
     return this.ensure();
   }
 
@@ -1966,14 +2208,21 @@ class NorwegianFjordSoundscape {
   startSoundscape() {
     if (this.running) return;
     const audio = this.ensure();
+    this.ensureHorn();
     this.running = true;
     audio.loop = true;
     audio.muted = false;
-    this.fade(NORWEGIAN_FJORD_WATER_BASE_VOLUME, 2000);
+    if (this.context?.state === "suspended") void this.context.resume();
+    this.fade(NORWEGIAN_CABIN_SOUNDSCAPE_BASE_VOLUME, 2000);
+    this.scheduleHorn(randomBetween(
+      NORWEGIAN_FERRY_HORN_FIRST_INTERVAL.minimum,
+      NORWEGIAN_FERRY_HORN_FIRST_INTERVAL.maximum,
+    ));
   }
 
   pauseSoundscape() {
     this.running = false;
+    this.stopHorn(false, 700);
     if (!this.player) return;
     this.fade(0, 700, () => this.player?.pause());
   }
@@ -1984,11 +2233,17 @@ class NorwegianFjordSoundscape {
     this.running = true;
     audio.loop = true;
     audio.muted = false;
-    void audio.play().then(() => this.fade(NORWEGIAN_FJORD_WATER_BASE_VOLUME, 850)).catch(() => {});
+    if (this.context?.state === "suspended") void this.context.resume();
+    void audio.play().then(() => this.fade(NORWEGIAN_CABIN_SOUNDSCAPE_BASE_VOLUME, 850)).catch(() => {});
+    this.scheduleHorn(randomBetween(
+      NORWEGIAN_FERRY_HORN_FIRST_INTERVAL.minimum,
+      NORWEGIAN_FERRY_HORN_FIRST_INTERVAL.maximum,
+    ));
   }
 
   stopSoundscape(fadeMs = 2000) {
     this.running = false;
+    this.stopHorn(true, Math.min(fadeMs, 900));
     if (!this.player) return;
     this.fade(0, fadeMs, () => {
       if (!this.player) return;
@@ -2001,14 +2256,44 @@ class NorwegianFjordSoundscape {
   destroy() {
     this.running = false;
     this.cancelFade();
-    if (!this.player) return;
-    this.player.pause();
-    this.player.currentTime = 0;
-    this.player.volume = 0;
-    this.player.remove();
+    this.clearHornTimers();
+    this.releaseHorn();
+    if (this.player) {
+      this.player.pause();
+      this.player.currentTime = 0;
+      this.player.volume = 0;
+      this.player.remove();
+    }
+    this.source?.disconnect();
+    this.filter?.disconnect();
+    if (this.context) void this.context.close();
     this.player = null;
+    this.context = null;
+    this.source = null;
+    this.filter = null;
   }
 }
+
+type CrossfadeAmbientProcessing = {
+  highPassFrequency?: number;
+  highPassQ?: number;
+  lowShelfFrequency?: number;
+  lowShelfGainDb?: number;
+  presenceDipFrequency?: number;
+  presenceDipQ?: number;
+  presenceDipGainDb?: number;
+  stereoPan?: number;
+};
+
+type CrossfadeAmbientEvent = {
+  source: string;
+  volume: number;
+  firstInterval: { minimum: number; maximum: number };
+  repeatInterval: { minimum: number; maximum: number };
+  prepareLeadMs: number;
+  audibleOffsetMs?: number;
+  exitFadeMs?: number;
+};
 
 class CrossfadeAmbientSoundscape {
   private players: [HTMLAudioElement, HTMLAudioElement] | null = null;
@@ -2016,6 +2301,14 @@ class CrossfadeAmbientSoundscape {
   private fadeFrames = new Map<HTMLAudioElement, number>();
   private crossfadeFrame: number | null = null;
   private loopTimer: number | null = null;
+  private context: AudioContext | null = null;
+  private processingNodes: AudioNode[] = [];
+  private processingSources: MediaElementAudioSourceNode[] = [];
+  private eventPlayer: HTMLAudioElement | null = null;
+  private eventPrepareTimer: ReturnType<typeof setTimeout> | null = null;
+  private eventPlaybackTimer: ReturnType<typeof setTimeout> | null = null;
+  private eventFadeFrame: number | null = null;
+  private eventPlaying = false;
   private running = false;
 
   constructor(
@@ -2025,6 +2318,8 @@ class CrossfadeAmbientSoundscape {
     private readonly durationSeconds: number,
     private readonly crossfadeSeconds: number,
     private readonly fadeInMs = 2000,
+    private readonly processing?: CrossfadeAmbientProcessing,
+    private readonly occasionalEvent?: CrossfadeAmbientEvent,
   ) {}
 
   private createPlayer(primary = false) {
@@ -2045,13 +2340,187 @@ class CrossfadeAmbientSoundscape {
     return this.players;
   }
 
+  private ensureProcessing() {
+    if (!this.processing || this.processingSources.length > 0 || typeof window === "undefined" || !window.AudioContext) return;
+    const processing = this.processing;
+    const context = new window.AudioContext();
+    const players = this.ensure();
+
+    players.forEach((audio) => {
+      const source = context.createMediaElementSource(audio);
+      let output: AudioNode = source;
+      this.processingSources.push(source);
+
+      if (processing.highPassFrequency !== undefined) {
+        const highPass = context.createBiquadFilter();
+        highPass.type = "highpass";
+        highPass.frequency.value = processing.highPassFrequency;
+        highPass.Q.value = processing.highPassQ ?? 0.7;
+        output.connect(highPass);
+        output = highPass;
+        this.processingNodes.push(highPass);
+      }
+
+      if (processing.lowShelfFrequency !== undefined && processing.lowShelfGainDb !== undefined) {
+        const lowShelf = context.createBiquadFilter();
+        lowShelf.type = "lowshelf";
+        lowShelf.frequency.value = processing.lowShelfFrequency;
+        lowShelf.gain.value = processing.lowShelfGainDb;
+        output.connect(lowShelf);
+        output = lowShelf;
+        this.processingNodes.push(lowShelf);
+      }
+
+      if (processing.presenceDipFrequency !== undefined && processing.presenceDipGainDb !== undefined) {
+        const presenceDip = context.createBiquadFilter();
+        presenceDip.type = "peaking";
+        presenceDip.frequency.value = processing.presenceDipFrequency;
+        presenceDip.Q.value = processing.presenceDipQ ?? 0.7;
+        presenceDip.gain.value = processing.presenceDipGainDb;
+        output.connect(presenceDip);
+        output = presenceDip;
+        this.processingNodes.push(presenceDip);
+      }
+
+      if (processing.stereoPan !== undefined && typeof context.createStereoPanner === "function") {
+        const panner = context.createStereoPanner();
+        panner.pan.value = processing.stereoPan;
+        output.connect(panner);
+        output = panner;
+        this.processingNodes.push(panner);
+      }
+
+      output.connect(context.destination);
+    });
+
+    this.context = context;
+  }
+
   getAmbientAudio() {
-    return this.ensure()[this.activeIndex];
+    const players = this.ensure();
+    this.ensureProcessing();
+    return players[this.activeIndex];
   }
 
   private clearLoopTimer() {
     if (this.loopTimer !== null) window.clearTimeout(this.loopTimer);
     this.loopTimer = null;
+  }
+
+  private ensureEvent() {
+    if (!this.occasionalEvent) return null;
+    if (!this.eventPlayer) {
+      const audio = createDeferredStandbyAudio();
+      audio.onended = () => {
+        this.eventPlaying = false;
+        audio.volume = 0;
+        audio.currentTime = 0;
+        if (this.running && this.occasionalEvent) {
+          this.scheduleEvent(randomBetween(
+            this.occasionalEvent.repeatInterval.minimum,
+            this.occasionalEvent.repeatInterval.maximum,
+          ));
+        }
+      };
+      this.eventPlayer = audio;
+    }
+    return this.eventPlayer;
+  }
+
+  private clearEventTimers() {
+    if (this.eventPrepareTimer !== null) clearTimeout(this.eventPrepareTimer);
+    if (this.eventPlaybackTimer !== null) clearTimeout(this.eventPlaybackTimer);
+    this.eventPrepareTimer = null;
+    this.eventPlaybackTimer = null;
+  }
+
+  private cancelEventFade() {
+    if (this.eventFadeFrame !== null) cancelAnimationFrame(this.eventFadeFrame);
+    this.eventFadeFrame = null;
+  }
+
+  private fadeEvent(target: number, duration: number, done?: () => void) {
+    if (!this.eventPlayer) { done?.(); return; }
+    this.cancelEventFade();
+    const audio = this.eventPlayer;
+    const from = audio.volume;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - began) / duration);
+      const eased = progress * progress * (3 - 2 * progress);
+      audio.volume = from + (target - from) * eased;
+      if (progress < 1) this.eventFadeFrame = requestAnimationFrame(tick);
+      else { this.eventFadeFrame = null; done?.(); }
+    };
+    this.eventFadeFrame = requestAnimationFrame(tick);
+  }
+
+  private releaseEvent() {
+    this.cancelEventFade();
+    this.eventPlaying = false;
+    if (this.eventPlayer) {
+      this.eventPlayer.onended = null;
+      releaseAudioElement(this.eventPlayer);
+      this.eventPlayer = null;
+    }
+  }
+
+  private stopEvent(release: boolean, fadeMs = 700) {
+    this.clearEventTimers();
+    if (!this.eventPlayer) return;
+    const finish = () => {
+      if (!this.eventPlayer) return;
+      this.eventPlayer.pause();
+      this.eventPlayer.currentTime = 0;
+      this.eventPlayer.volume = 0;
+      this.eventPlaying = false;
+      if (release) this.releaseEvent();
+    };
+    if (this.eventPlaying && !this.eventPlayer.paused && this.eventPlayer.volume > 0) {
+      this.fadeEvent(0, fadeMs, finish);
+    } else {
+      finish();
+    }
+  }
+
+  private playEvent() {
+    this.eventPlaybackTimer = null;
+    if (!this.running || this.eventPlaying || !this.occasionalEvent) return;
+    const audio = this.ensureEvent();
+    if (!audio) return;
+    if (!audio.getAttribute("src")) prepareStandbyAudio(audio, this.occasionalEvent.source);
+    audio.loop = false;
+    audio.muted = false;
+    audio.currentTime = 0;
+    audio.volume = this.occasionalEvent.volume;
+    this.eventPlaying = true;
+    void audio.play().catch(() => {
+      this.eventPlaying = false;
+      audio.volume = 0;
+      if (this.running && this.occasionalEvent) {
+        this.scheduleEvent(randomBetween(
+          this.occasionalEvent.repeatInterval.minimum,
+          this.occasionalEvent.repeatInterval.maximum,
+        ));
+      }
+    });
+  }
+
+  private scheduleEvent(audibleDelayMs: number) {
+    this.clearEventTimers();
+    if (!this.running || !this.occasionalEvent) return;
+    const event = this.ensureEvent();
+    if (!event) return;
+    const playbackDelayMs = Math.max(0, audibleDelayMs - (this.occasionalEvent.audibleOffsetMs ?? 0));
+    const prepareDelayMs = Math.max(0, playbackDelayMs - this.occasionalEvent.prepareLeadMs);
+
+    this.eventPrepareTimer = setTimeout(() => {
+      this.eventPrepareTimer = null;
+      if (this.running && !event.getAttribute("src") && this.occasionalEvent) {
+        prepareStandbyAudio(event, this.occasionalEvent.source);
+      }
+    }, prepareDelayMs);
+    this.eventPlaybackTimer = setTimeout(() => this.playEvent(), playbackDelayMs);
   }
 
   private cancelFade(audio: HTMLAudioElement) {
@@ -2145,14 +2614,22 @@ class CrossfadeAmbientSoundscape {
     this.running = true;
     active.loop = false;
     active.muted = false;
+    if (this.context?.state === "suspended") void this.context.resume();
     this.fade(active, this.baseVolume, this.fadeInMs);
     this.scheduleCrossfade();
+    if (this.occasionalEvent) {
+      this.scheduleEvent(randomBetween(
+        this.occasionalEvent.firstInterval.minimum,
+        this.occasionalEvent.firstInterval.maximum,
+      ));
+    }
   }
 
   pauseSoundscape() {
     this.running = false;
     this.clearLoopTimer();
     this.cancelFades();
+    this.stopEvent(false, 700);
     this.players?.forEach((audio) => this.fade(audio, 0, 700, () => audio.pause()));
   }
 
@@ -2162,9 +2639,16 @@ class CrossfadeAmbientSoundscape {
     this.running = true;
     active.loop = false;
     active.muted = false;
+    if (this.context?.state === "suspended") void this.context.resume();
     void active.play().then(() => {
       this.fade(active, this.baseVolume, 850);
       this.scheduleCrossfade();
+      if (this.occasionalEvent) {
+        this.scheduleEvent(randomBetween(
+          this.occasionalEvent.firstInterval.minimum,
+          this.occasionalEvent.firstInterval.maximum,
+        ));
+      }
     }).catch(() => { this.running = false; });
   }
 
@@ -2172,6 +2656,7 @@ class CrossfadeAmbientSoundscape {
     this.running = false;
     this.clearLoopTimer();
     this.cancelFades();
+    this.stopEvent(true, Math.min(fadeMs, this.occasionalEvent?.exitFadeMs ?? 700));
     this.players?.forEach((audio) => this.fade(audio, 0, fadeMs, () => {
       audio.pause();
       audio.currentTime = 0;
@@ -2184,13 +2669,21 @@ class CrossfadeAmbientSoundscape {
     this.running = false;
     this.clearLoopTimer();
     this.cancelFades();
+    this.clearEventTimers();
+    this.releaseEvent();
     this.players?.forEach((audio) => {
       audio.pause();
       audio.currentTime = 0;
       audio.volume = 0;
       audio.remove();
     });
+    this.processingSources.forEach((source) => source.disconnect());
+    this.processingNodes.forEach((node) => node.disconnect());
+    if (this.context) void this.context.close();
     this.players = null;
+    this.processingSources = [];
+    this.processingNodes = [];
+    this.context = null;
     this.activeIndex = 0;
   }
 }
@@ -2508,9 +3001,7 @@ class SingleAmbientSoundscape {
     }
 
     const playback = audio.play();
-    playback.then(() => {
-      console.info("Bali temple bell playback primed", { src: audio.currentSrc || audio.src });
-    }).catch((error: unknown) => {
+    playback.catch((error: unknown) => {
       this.eventArmed = false;
       this.clearEventTimer();
       console.error("Bali temple bell playback failed:", error);
@@ -2523,7 +3014,6 @@ class SingleAmbientSoundscape {
       audio.currentTime = 0;
       this.applyEventDecay();
       this.eventPlayed = true;
-      console.info("Bali temple bell audible strike started", { src: audio.currentSrc || audio.src, volume: this.occasionalEvent?.volume ?? 0 });
     }, this.occasionalEvent.firstDelayMs);
   }
 
@@ -2663,6 +3153,23 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
     NEW_ZEALAND_HOT_SPRING_BASE_VOLUME,
     NEW_ZEALAND_HOT_SPRING_DURATION_SECONDS,
     NEW_ZEALAND_HOT_SPRING_CROSSFADE_SECONDS,
+    2000,
+    {
+      highPassFrequency: NEW_ZEALAND_HOT_SPRING_HIGH_PASS_FREQUENCY,
+      highPassQ: NEW_ZEALAND_HOT_SPRING_HIGH_PASS_Q,
+      lowShelfFrequency: NEW_ZEALAND_HOT_SPRING_LOW_SHELF_FREQUENCY,
+      lowShelfGainDb: NEW_ZEALAND_HOT_SPRING_LOW_SHELF_GAIN_DB,
+      stereoPan: NEW_ZEALAND_HOT_SPRING_STEREO_PAN,
+    },
+    {
+      source: NEW_ZEALAND_TUSSOCK_AUDIO,
+      volume: NEW_ZEALAND_TUSSOCK_VOLUME,
+      firstInterval: NEW_ZEALAND_TUSSOCK_FIRST_INTERVAL,
+      repeatInterval: NEW_ZEALAND_TUSSOCK_REPEAT_INTERVAL,
+      prepareLeadMs: NEW_ZEALAND_TUSSOCK_PREPARE_LEAD_MS,
+      audibleOffsetMs: NEW_ZEALAND_TUSSOCK_AUDIBLE_OFFSET_MS,
+      exitFadeMs: 700,
+    },
   );
   if (!californiaCoastalWavesSoundscapeRef.current) californiaCoastalWavesSoundscapeRef.current = new CrossfadeAmbientSoundscape(
     "california-coastal-morning",
@@ -2670,6 +3177,23 @@ export const AmbientAudio = forwardRef<AmbientAudioHandle, AmbientAudioProps>(fu
     CALIFORNIA_COASTAL_WAVES_BASE_VOLUME,
     CALIFORNIA_COASTAL_WAVES_DURATION_SECONDS,
     CALIFORNIA_COASTAL_WAVES_CROSSFADE_SECONDS,
+    2000,
+    {
+      lowShelfFrequency: CALIFORNIA_COASTAL_WAVES_LOW_SHELF_FREQUENCY,
+      lowShelfGainDb: CALIFORNIA_COASTAL_WAVES_LOW_SHELF_GAIN_DB,
+      presenceDipFrequency: CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_FREQUENCY,
+      presenceDipQ: CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_Q,
+      presenceDipGainDb: CALIFORNIA_COASTAL_WAVES_PRESENCE_DIP_GAIN_DB,
+    },
+    {
+      source: CALIFORNIA_RIDGE_BIRD_AUDIO,
+      volume: CALIFORNIA_RIDGE_BIRD_VOLUME,
+      firstInterval: CALIFORNIA_RIDGE_BIRD_FIRST_INTERVAL,
+      repeatInterval: CALIFORNIA_RIDGE_BIRD_REPEAT_INTERVAL,
+      prepareLeadMs: CALIFORNIA_RIDGE_BIRD_PREPARE_LEAD_MS,
+      audibleOffsetMs: CALIFORNIA_RIDGE_BIRD_AUDIBLE_OFFSET_MS,
+      exitFadeMs: 700,
+    },
   );
   const hokkaidoSoundscape = hokkaidoSoundscapeRef.current;
   const kyotoSoundscape = kyotoSoundscapeRef.current;

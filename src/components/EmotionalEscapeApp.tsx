@@ -7,7 +7,7 @@ import { moods, moodById, sceneById, scenesForMood, type AtmosphereLayerConfig, 
 import { BALI_SUNRISE_DESTINATION_ID, markScenePlaceDiscovered } from "@/data/destinations";
 import { migrateHavenStorage } from "@/data/havenStorage";
 import { formatSessionTime, useHavenSession, type ActiveSession } from "@/hooks/useHavenSession";
-import { AmbientAudio, preparePrimaryAmbientAudio, releasePreparedPrimaryAmbientAudio, type AmbientAudioHandle } from "./AmbientAudio";
+import { AmbientAudio, preparePrimaryAmbientAudio, releasePreparedPrimaryAmbientAudio, type AmbientAudioHandle, type PrimaryAudioPreparationIntent } from "./AmbientAudio";
 import { DeveloperTools } from "./DeveloperTools";
 import { YourWorldPage } from "./YourWorldPage";
 
@@ -371,8 +371,8 @@ function MoodPoster({ mood, onChoose }: { mood: Mood; onChoose: () => void }) {
 function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }) {
   const dimensions = SCENE_CARD_DIMENSIONS[scene.id] ?? DEFAULT_SCENE_CARD_DIMENSIONS;
   const blurDataURL = SCENE_CARD_BLUR_DATA_URLS[scene.id];
-  const prepareOnIntent = () => {
-    preparePrimaryAmbientAudio(scene.id);
+  const prepareOnIntent = (intent: PrimaryAudioPreparationIntent) => {
+    preparePrimaryAmbientAudio(scene.id, intent);
     if (scene.id === HOKKAIDO_SCENE_ID) void prepareSceneHero(scene.backgroundImage);
   };
   const chooseWithKeyboard = (event: KeyboardEvent<HTMLElement>) => {
@@ -383,7 +383,7 @@ function ScenePoster({ scene, onChoose }: { scene: Scene; onChoose: () => void }
   };
 
   return (
-    <article className={`scene-poster ${scene.id === HOKKAIDO_SCENE_ID ? "scene-poster--hokkaido" : ""} ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={prepareOnIntent} onMouseEnter={prepareOnIntent} onFocus={prepareOnIntent} onPointerDown={prepareOnIntent} onTouchStart={prepareOnIntent} aria-label={`Enter ${scene.name}`}>
+    <article className={`scene-poster ${scene.id === HOKKAIDO_SCENE_ID ? "scene-poster--hokkaido" : ""} ${scene.id === FINLAND_SCENE_ID ? "scene-poster--finland" : ""} ${scene.id === "new-zealand-mountain-cabin" ? "scene-poster--new-zealand-mountain-cabin" : ""} ${scene.id === "california-coastal-morning" ? "scene-poster--california-coastal-morning" : ""}`} role="link" tabIndex={0} onClick={onChoose} onKeyDown={chooseWithKeyboard} onPointerEnter={() => prepareOnIntent("preview")} onMouseEnter={() => prepareOnIntent("preview")} onFocus={() => prepareOnIntent("preview")} onPointerDown={() => prepareOnIntent("committed")} onTouchStart={() => prepareOnIntent("committed")} aria-label={`Enter ${scene.name}`}>
       <ProgressiveCardImage
         src={scene.coverImage}
         alt={scene.id === FINLAND_SCENE_ID ? "A warm glass-roof cabin in Finnish Lapland overlooking a snowy forest and the northern lights." : `${scene.name}, ${scene.location}`}
@@ -717,7 +717,7 @@ function SceneStage({ scene, mode, onBack, onEnter, onLeave }: { scene: Scene; m
       {isKyotoRainyCafe && mode === "active" && livingLayersReady && <KyotoLivingLayer />}
       {isSwissLakes && mode === "active" && livingLayersReady && <SwissMistLayer />}
       {isBaliSunriseHouse && mode === "active" && livingLayersReady && <BaliMorningLayer />}
-      <section className="scene-introduction-copy"><p>{scene.location}</p><h2>{scene.name}</h2><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id)} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id)} onFocus={() => preparePrimaryAmbientAudio(scene.id)} onPointerDown={() => preparePrimaryAmbientAudio(scene.id)} onTouchStart={() => preparePrimaryAmbientAudio(scene.id)}>Step Inside <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
+      <section className="scene-introduction-copy"><p>{scene.location}</p><h2>{scene.name}</h2><h1>{scene.description}</h1><div className="scene-atmosphere"><span>{scene.time}</span><span>{scene.weather}</span></div>{scene.status === "available" ? <button className="enter-scene" disabled={entering} onClick={enter} onPointerEnter={() => preparePrimaryAmbientAudio(scene.id, "preview")} onMouseEnter={() => preparePrimaryAmbientAudio(scene.id, "preview")} onFocus={() => preparePrimaryAmbientAudio(scene.id, "preview")} onPointerDown={() => preparePrimaryAmbientAudio(scene.id, "committed")} onTouchStart={() => preparePrimaryAmbientAudio(scene.id, "committed")}>Step Inside <i>→</i></button> : <div className="coming-soon"><b>Coming soon</b><span>This place is still being made quiet enough to enter.</span></div>}</section>
       <button className="quiet-back" onClick={onBack}>← Back</button><p className="introduction-note">Nothing is required when you arrive.</p>
       <section className="scene-presence">
         <p className="scene-presence-location">{scene.location}</p>
